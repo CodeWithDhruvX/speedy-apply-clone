@@ -190,7 +190,7 @@ function renderChart(logs, chartElement, range = 'weekly') {
     // Draw bars
     keys.forEach((key, index) => {
         const count = stats[key];
-        const height = (count / max) * 100;
+        const height = (count / max) * 85; // Leave 15% space for labels/padding
         const label = labels[index];
 
         const col = document.createElement('div');
@@ -221,6 +221,12 @@ function initProfile() {
     renameBtn.addEventListener('click', renameCurrentProfile);
     deleteBtn.addEventListener('click', deleteCurrentProfile);
     duplicateBtn.addEventListener('click', duplicateCurrentProfile);
+
+    // Import / Export
+    document.getElementById('exportProfileBtn').addEventListener('click', exportProfile);
+    document.getElementById('importProfileBtn').addEventListener('click', importProfile);
+    document.getElementById('importFileInput').addEventListener('change', handleFileImport);
+
     selector.addEventListener('change', (e) => switchProfile(e.target.value));
 
     document.getElementById('addEducationBtn').addEventListener('click', () => addEducationItem());
@@ -590,4 +596,104 @@ function addWorkItem(data = {}) {
     });
 
     list.appendChild(item);
+}
+
+// --- Import / Export Logic ---
+
+function exportProfile() {
+    const current = profiles.find((p) => p.id === activeProfileId);
+    if (!current) return;
+
+    // Create a clean copy to export
+    const exportData = {
+        name: current.name,
+        timestamp: new Date().toISOString(),
+        version: "1.0",
+        data: current.data
+    };
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+
+    // Sanitize filename
+    const safeName = current.name.replace(/[^a-z0-9]/gi, '_');
+    const fileName = `SpeedyApply_Profile_${safeName}.json`;
+
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", fileName);
+    document.body.appendChild(downloadAnchorNode); // required for firefox
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+
+    // Feedback
+    const btn = document.getElementById('exportProfileBtn');
+    if (btn) {
+        const originalText = btn.textContent;
+        btn.textContent = 'Exported!';
+        btn.style.backgroundColor = '#22c55e';
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.style.backgroundColor = '';
+        }, 1500);
+    }
+}
+
+function importProfile() {
+    const fileInput = document.getElementById('importFileInput');
+    if (fileInput) fileInput.click();
+}
+
+function handleFileImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const json = JSON.parse(e.target.result);
+
+            // Basic Validation
+            if (!json.data || !json.name) {
+                alert("Invalid profile file format. Missing 'data' or 'name' fields.");
+                return;
+            }
+
+            // Create new profile from import
+            const newProfile = {
+                id: 'profile-' + Date.now(),
+                name: "Imported: " + json.name,
+                data: json.data
+            };
+
+            profiles.push(newProfile);
+            activeProfileId = newProfile.id;
+
+            await chrome.storage.local.set({ profiles, activeProfileId });
+
+            renderProfileSelector();
+            renderProfileForm();
+
+            // Feedback
+            const btn = document.getElementById('importProfileBtn');
+            if (btn) {
+                const originalText = btn.textContent;
+                btn.textContent = 'Imported!';
+                btn.style.backgroundColor = '#22c55e';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.backgroundColor = '';
+                }, 1500);
+            }
+
+            alert("Profile imported successfully!");
+
+        } catch (error) {
+            console.error(error);
+            alert("Error parsing JSON file. Please ensure it is a valid JSON.");
+        }
+
+        // Reset input so the same file can be selected again if needed
+        event.target.value = '';
+    };
+    reader.readAsText(file);
 }
