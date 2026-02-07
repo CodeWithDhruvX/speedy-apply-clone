@@ -67,16 +67,20 @@ window.SpeedyDictionary = {
             selectors: ['input[name*="notice"]', 'select[name*="notice"]', 'input[name="notice_period"]'] // Added Lever/Generic
         },
         "preferences.currentCtc": {
-            regex: /current\s*ctc|current\s*salary|current\s*compensation/i,
-            selectors: ['input[name*="ctc"]', 'input[name*="salary"]', 'input[name="current_ctc"]'] // Added Generic/Lever
+            regex: /current\s*ctc|current\s*salary|current\s*compensation|ctc\s*\(|your\s*ctc/i,
+            selectors: ['input[name*="ctc"]', 'input[name*="salary"]', 'input[name="current_ctc"]'] // Added Generic/Lever/Indeed
         },
         "preferences.expectedCtc": {
-            regex: /expected\s*ctc|expected\s*salary|expectation/i,
+            regex: /expected\s*ctc|expected\s*salary|expectation|expecting/i,
             selectors: ['input[name*="expected"]', 'input[name="expected_ctc"]'] // Added Generic/Lever
         },
         "preferences.experience": {
-            regex: /years\s*of\s*experience|total\s*experience/i,
-            selectors: ['input[name*="experience"]', 'select[name*="experience"]', 'input[name="experience_years"]', 'input[name="total_experience"]', 'select[name="total_experience"]'] // Hirist
+            regex: /years\s*of\s*experience|total\s*experience|overall\s*years?\s*of\s*experience|how\s*much\s*is\s*your\s*overall|experience\s*\*/i,
+            selectors: ['input[name*="experience"]', 'select[name*="experience"]', 'input[name="experience_years"]', 'input[name="total_experience"]', 'select[name="total_experience"]'] // Hirist/Indeed
+        },
+        "preferences.techExperience": {
+            regex: /experience\s*in\s*(frontend|backend|react|angular|vue|node|python|java|\.net|full[\s-]?stack)/i,
+            selectors: ['input[name*="frontend"]', 'input[name*="backend"]', 'input[name*="tech"]', 'input[name*="stack"]']
         },
         // Education
         "education.school": {
