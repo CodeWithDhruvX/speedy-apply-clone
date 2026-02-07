@@ -86,6 +86,9 @@ async function initDashboard() {
                     <td>${log.role || 'N/A'}</td>
                     <td>${new Date(log.timestamp).toLocaleDateString()} ${new Date(log.timestamp).toLocaleTimeString()}</td>
                     <td><span class="status-badge">Applied</span></td>
+                    <td>
+                        <button class="delete-btn danger-btn" data-timestamp="${log.timestamp}" title="Delete Record">🗑️</button>
+                    </td>
                 `;
                 tableBody.appendChild(row);
             });
@@ -93,12 +96,26 @@ async function initDashboard() {
             // Add copy listeners
             document.querySelectorAll('.copy-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
-                    const url = e.target.dataset.url;
+                    const url = e.currentTarget.dataset.url;
                     navigator.clipboard.writeText(url).then(() => {
-                        const original = e.target.textContent;
-                        e.target.textContent = '✅';
-                        setTimeout(() => e.target.textContent = original, 1000);
+                        const original = e.currentTarget.textContent;
+                        e.currentTarget.textContent = '✅';
+                        setTimeout(() => e.currentTarget.textContent = original, 1000);
                     });
+                });
+            });
+
+            // Add delete listeners
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const timestamp = e.currentTarget.dataset.timestamp;
+                    if (confirm('Are you sure you want to delete this record?')) {
+                        const data = await chrome.storage.local.get(['applicationLog']);
+                        const currentLogs = data.applicationLog || [];
+                        const newLogs = currentLogs.filter(log => String(log.timestamp) !== timestamp);
+                        await chrome.storage.local.set({ applicationLog: newLogs });
+                        initDashboard(); // Refresh
+                    }
                 });
             });
         }
@@ -342,6 +359,7 @@ function renderProfileForm() {
 
     // Populate Profile Extras
     document.getElementById('pr-skills').value = data.profile.skills || '';
+    document.getElementById('pr-reasonForChange').value = data.profile.reasonForChange || '';
     document.getElementById('pr-summary').value = data.profile.summary || '';
     document.getElementById('doc-coverLetter').value = data.documents.coverLetter || '';
 
@@ -399,6 +417,7 @@ async function saveCurrentProfile() {
         },
         profile: {
             skills: document.getElementById('pr-skills').value,
+            reasonForChange: document.getElementById('pr-reasonForChange').value,
             summary: document.getElementById('pr-summary').value
         },
         documents: {

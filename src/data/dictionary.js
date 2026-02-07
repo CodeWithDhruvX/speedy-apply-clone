@@ -3,7 +3,7 @@ window.SpeedyDictionary = {
     mapping: {
         "personal.firstName": {
             regex: /first\s*name|given\s*name|fname|legal\s*name/i,
-            selectors: ['#first_name', 'input[name="first_name"]', 'input[name="firstName"]', '[autocomplete="given-name"]', '[data-automation-id="legalNameSection_firstName"]', '#user_name', 'input[name="job_application[first_name]"]', '[name="name"]'] // Added Greenhouse, generic name
+            selectors: ['#first_name', 'input[name="first_name"]', 'input[name="firstName"]', '[autocomplete="given-name"]', '[data-automation-id="legalNameSection_firstName"]', '#user_name', 'input[name="job_application[first_name]"]', '[name="name"]', 'input[name="candidate_name"]', 'input[name="user_name"]'] // Added Greenhouse, generic name, Hirist
         },
         "personal.lastName": {
             regex: /last\s*name|surname|lname|family\s*name/i,
@@ -15,7 +15,7 @@ window.SpeedyDictionary = {
         },
         "personal.phone": {
             regex: /phone(?!.*code)|mobile|contact\s*number/i,
-            selectors: ['#phone', 'input[name="phone"]', '[type="tel"]', '[autocomplete="tel"]', '[data-automation-id="phone-number"]', '#user_mobile', 'input[name="job_application[phone]"]', 'input[name="mobile"]', 'input[name="mobile_number"]'] // Added Greenhouse, Instahyre, Foundit
+            selectors: ['#phone', 'input[name="phone"]', '[type="tel"]', '[autocomplete="tel"]', '[data-automation-id="phone-number"]', '#user_mobile', 'input[name="job_application[phone]"]', 'input[name="mobile"]', 'input[name="mobile_number"]', 'input[name="phone_no"]', 'input[name="contact_number"]'] // Added Greenhouse, Instahyre, Foundit, Hirist
         },
 
         // Address Components - MOVED UP to prioritize over generic Location
@@ -43,7 +43,7 @@ window.SpeedyDictionary = {
         // Generic Location (Fallback)
         "personal.location": {
             regex: /location|residence/i, // Removed 'city' from here
-            selectors: ['#address', '#location', '[autocomplete="address-level2"]', 'input[name="job_application[location]"]', 'input[name="current_location"]'] // Added Greenhouse, generic
+            selectors: ['#address', '#location', '[autocomplete="address-level2"]', 'input[name="job_application[location]"]', 'input[name="current_location"]', 'input[name="current_city"]', 'input[name="job_location"]'] // Added Greenhouse, generic, Hirist
         },
 
         "links.linkedin": {
@@ -76,7 +76,7 @@ window.SpeedyDictionary = {
         },
         "preferences.experience": {
             regex: /years\s*of\s*experience|total\s*experience/i,
-            selectors: ['input[name*="experience"]', 'select[name*="experience"]', 'input[name="experience_years"]']
+            selectors: ['input[name*="experience"]', 'select[name*="experience"]', 'input[name="experience_years"]', 'input[name="total_experience"]', 'select[name="total_experience"]'] // Hirist
         },
         // Education
         "education.school": {
@@ -141,11 +141,15 @@ window.SpeedyDictionary = {
         // Profile Enhancements
         "profile.skills": {
             regex: /skills|technologies/i,
-            selectors: ['input[name*="skills"]', 'textarea[name*="skills"]', '[data-automation-id="skills"]']
+            selectors: ['input[name*="skills"]', 'textarea[name*="skills"]', '[data-automation-id="skills"]', 'input[name="key_skills"]', 'textarea[name="key_skills"]', 'input[name="primary_skills"]'] // Hirist
+        },
+        "profile.reasonForChange": {
+            regex: /reason\s*for\s*change|why\s*change|reason\s*for\s*leaving/i,
+            selectors: ['textarea[name*="reason"]', 'input[name*="reason"]', '[data-automation-id="reasonForChange"]', 'textarea[name="reason_for_change"]'] // Hirist
         },
         "profile.summary": {
             regex: /summary|headline|bio|about\s*me/i,
-            selectors: ['textarea[name*="summary"]', 'textarea[name*="bio"]', 'textarea[name*="about"]', '[data-automation-id="summary"]']
+            selectors: ['textarea[name*="summary"]', 'textarea[name*="bio"]', 'textarea[name*="about"]', '[data-automation-id="summary"]', 'textarea[name="resume_headline"]', 'textarea[name="profile_summary"]'] // Hirist
         },
         "documents.coverLetter": {
             regex: /cover\s*letter|cl/i,
