@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpeedyApply Manual Test - File Input</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+
+        .row {
+            display: flex;
+            gap: 20px;
+        }
+
+        .col {
+            flex: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Manual Test: File Input Safety</h1>
+    <p>This page mimics a job application form with a file input to verify that the extension does not crash.</p>
+
+    <form>
+        <div class="form-group">
+            <label for="first_name">First Name</label>
+            <input type="text" id="first_name" name="first_name" placeholder="First Name">
+        </div>
+
+        <div class="form-group">
+            <label for="last_name">Last Name</label>
+            <input type="text" id="last_name" name="last_name" placeholder="Last Name">
+        </div>
+
+        <div class="form-group">
+            <label for="resume">Resume/CV (File Input)</label>
+            <!-- Dictionary maps "resume" or "cv"? No, "documents.resume" usually mapped via regex "resume" -->
+            <!-- Let's check dictionary.js. It might not have "resume" mapped to a key, but let's see if generic matching picks it up. -->
+            <!-- Even if it doesn't match a key, we want to ensure any file input is ignored by the engine scan -->
+            <input type="file" id="resume" name="resume">
+        </div>
+
+        <div class="form-group">
+            <label for="cover_letter">Cover Letter (Text)</label>
+            <textarea id="cover_letter" name="cover_letter" rows="5"></textarea>
+        </div>
+
+    </form>
+</body>
+
+</html>

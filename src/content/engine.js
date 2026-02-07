@@ -280,7 +280,7 @@
             let inputs = [];
 
             // Standard inputs + Custom Dropdowns (Workday, ARIA)
-            const standard = root.querySelectorAll('input:not([type="hidden"]), select, textarea, [role="combobox"], [role="button"][aria-haspopup], [data-automation-id*="dropdown"]');
+            const standard = root.querySelectorAll('input:not([type="hidden"]):not([type="file"]), select, textarea, [role="combobox"], [role="button"][aria-haspopup], [data-automation-id*="dropdown"]');
             inputs = [...standard];
 
             // Shadow DOM traversal

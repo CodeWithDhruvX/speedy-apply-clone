@@ -1,6 +1,7 @@
 window.SpeedyInjector = {
     setValue: function (element, value, key) {
         if (!element || !value) return;
+        if (element.type === 'file') return; // Cannot programmatically set file input value
 
         let finalValue = value;
 
