@@ -93,30 +93,43 @@
         },
 
         scanAndFill: async function (force = false) {
-            // RE-FETCH PROFILE DATA to ensure we use the latest active profile
-            const storage = await chrome.storage.local.get(['profile', 'profiles', 'activeProfileId', 'isAutoFillEnabled']);
-            let currentProfileData = null;
+            try {
+                // RE-FETCH PROFILE DATA to ensure we use the latest active profile
+                const storage = await chrome.storage.local.get(['profile', 'profiles', 'activeProfileId', 'isAutoFillEnabled']);
 
-            // Check if auto-fill is enabled
-            if (!force && storage.isAutoFillEnabled === false) {
-                console.log("SpeedyApply: Auto-fill disabled by user.");
+                let currentProfileData = null;
+
+                // Check if auto-fill is enabled
+                if (!force && storage.isAutoFillEnabled === false) {
+                    console.log("SpeedyApply: Auto-fill disabled by user.");
+                    return;
+                }
+
+                if (storage.profiles && storage.activeProfileId) {
+                    const active = storage.profiles.find(p => p.id === storage.activeProfileId);
+                    if (active) currentProfileData = active.data;
+                } else if (storage.profile) {
+                    currentProfileData = storage.profile;
+                }
+
+                if (!currentProfileData) {
+                    console.log("SpeedyApply: No active profile found for autofill.");
+                    return;
+                }
+
+                // Update the global 'profile' variable used by getValueByKey helper
+                profile = currentProfileData;
+
+            } catch (error) {
+                if (error.message.includes("Extension context invalidated")) {
+                    console.warn("SpeedyApply: Extension context invalidated (likely updated/reloaded). Stopping script.");
+                    // Optional: Disconnect observer if we had a reference, but returning stops this loop.
+                    return;
+                }
+                console.error("SpeedyApply: Error accessing storage", error);
                 return;
             }
 
-            if (storage.profiles && storage.activeProfileId) {
-                const active = storage.profiles.find(p => p.id === storage.activeProfileId);
-                if (active) currentProfileData = active.data;
-            } else if (storage.profile) {
-                currentProfileData = storage.profile;
-            }
-
-            if (!currentProfileData) {
-                console.log("SpeedyApply: No active profile found for autofill.");
-                return;
-            }
-
-            // Update the global 'profile' variable used by getValueByKey helper
-            profile = currentProfileData;
 
             const inputs = this.getAllInputs(document.body);
             let filledCount = 0;
@@ -152,28 +165,35 @@
         },
 
         logApplication: async function () {
-            // Simple debounce to avoid logging same page multiple times in one session
-            if (this.hasLogged) return;
+            try {
+                // Simple debounce to avoid logging same page multiple times in one session
+                if (this.hasLogged) return;
 
-            const url = window.location.hostname;
-            // Try to guess role from title?
-            const role = document.title.split('-')[0].split('|')[0].trim().substring(0, 30);
+                const url = window.location.hostname;
+                // Try to guess role from title?
+                const role = document.title.split('-')[0].split('|')[0].trim().substring(0, 30);
 
-            const storage = await chrome.storage.local.get('applicationLog');
-            let logs = storage.applicationLog || [];
+                const storage = await chrome.storage.local.get('applicationLog');
+                let logs = storage.applicationLog || [];
 
-            // Check if we logged this URL recently (last 1 hour) to avoid duplicates on refresh
-            const recent = logs.find(l => l.site === url && (Date.now() - l.timestamp < 3600000));
+                // Check if we logged this URL recently (last 1 hour) to avoid duplicates on refresh
+                const recent = logs.find(l => l.site === url && (Date.now() - l.timestamp < 3600000));
 
-            if (!recent) {
-                logs.push({
-                    site: url,
-                    role: role,
-                    timestamp: Date.now()
-                });
-                await chrome.storage.local.set({ applicationLog: logs });
-                this.hasLogged = true;
-                console.log("SpeedyApply: Logged application to Dashboard");
+                if (!recent) {
+                    logs.push({
+                        site: url,
+                        role: role,
+                        timestamp: Date.now()
+                    });
+                    await chrome.storage.local.set({ applicationLog: logs });
+                    this.hasLogged = true;
+                    console.log("SpeedyApply: Logged application to Dashboard");
+                }
+            } catch (error) {
+                // Ignore context invalidated errors here too
+                if (!error.message.includes("Extension context invalidated")) {
+                    console.error("SpeedyApply: Error logging application", error);
+                }
             }
         },
 
@@ -200,6 +220,21 @@
 
         getValueByKey: function (key) {
             // key is like "personal.firstName" or "education.school"
+
+            // Special handling for Generic Location if not explicitly set
+            if (key === 'personal.location') {
+                const val = profile.personal && profile.personal.location;
+                if (val) return val;
+
+                // Fallback: Construct it
+                if (profile.personal) {
+                    const { city, state, country } = profile.personal;
+                    if (city && state) return `${city}, ${state}`;
+                    if (city && country) return `${city}, ${country}`;
+                    if (city) return city;
+                }
+            }
+
             const parts = key.split('.');
             if (parts.length === 2 && profile[parts[0]]) {
                 const section = profile[parts[0]];

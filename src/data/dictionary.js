@@ -17,16 +17,35 @@ window.SpeedyDictionary = {
             regex: /phone(?!.*code)|mobile|contact\s*number/i,
             selectors: ['#phone', 'input[name="phone"]', '[type="tel"]', '[autocomplete="tel"]', '[data-automation-id="phone-number"]', '#user_mobile', 'input[name="job_application[phone]"]', 'input[name="mobile"]', 'input[name="mobile_number"]'] // Added Greenhouse, Instahyre, Foundit
         },
-        "personal.location": {
-            regex: /city|location|residence/i,
-            selectors: ['#address', '#location', '[autocomplete="address-level2"]', 'input[name="job_application[location]"]', 'input[name="current_location"]'] // Added Greenhouse, generic
-        },
-        // ...
-        // Address
+
+        // Address Components - MOVED UP to prioritize over generic Location
         "personal.street": {
             regex: /^address\s*line\s*1$|^street$|^address1$|^address$/i,
             selectors: ['input[name*="address"]', 'input[name*="street"]', '[autocomplete="address-line1"]', '[data-automation-id="addressSection_addressLine1"]', '[data-automation-id="addressLine1"]']
         },
+        "personal.city": {
+            regex: /city|town|location\s*\(?city\)?/i,
+            selectors: ['input[name*="city"]', 'input[name*="town"]', '[autocomplete="address-level2"]', '[data-automation-id="addressSection_city"]', '[data-automation-id="city"]']
+        },
+        "personal.state": {
+            regex: /state|province|region|county/i,
+            selectors: ['input[name*="state"]', 'input[name*="province"]', '[autocomplete="address-level1"]', '[data-automation-id="addressSection_region"]', '[data-automation-id="region"]']
+        },
+        "personal.zip": {
+            regex: /zip\s*code|postal\s*code|pincode|zip/i,
+            selectors: ['input[name*="zip"]', 'input[name*="postal"]', '[autocomplete="postal-code"]', '[data-automation-id="addressSection_postalCode"]', '[data-automation-id="postalCode"]']
+        },
+        "personal.country": {
+            regex: /country/i,
+            selectors: ['input[name*="country"]', 'select[name*="country"]', '[autocomplete="country"]', '[data-automation-id="addressSection_countryRegion"]', '[data-automation-id="countryRegion"]']
+        },
+
+        // Generic Location (Fallback)
+        "personal.location": {
+            regex: /location|residence/i, // Removed 'city' from here
+            selectors: ['#address', '#location', '[autocomplete="address-level2"]', 'input[name="job_application[location]"]', 'input[name="current_location"]'] // Added Greenhouse, generic
+        },
+
         "links.linkedin": {
             regex: /linkedin/i,
             selectors: ['input[name*="linkedin"]', '[id*="linkedin"]', 'input[name="job_application[answers][][text_value]"]'] // Note: Greenhouse often uses custom IDs for questions, this is a best guess for standard questions
@@ -92,27 +111,6 @@ window.SpeedyDictionary = {
         "work.description": {
             regex: /description|responsibilities|duties/i,
             selectors: ['textarea[name*="description"]', 'textarea[name*="responsibilities"]', 'textarea[name="job_application[employment][][notes]"]'] // Added Greenhouse
-        },
-        // Address
-        "personal.street": {
-            regex: /^address\s*line\s*1$|^street$|^address1$/i,
-            selectors: ['input[name*="address"]', 'input[name*="street"]', '[autocomplete="address-line1"]', '[data-automation-id="addressSection_addressLine1"]', '[data-automation-id="addressLine1"]']
-        },
-        "personal.city": {
-            regex: /city|town/i,
-            selectors: ['input[name*="city"]', 'input[name*="town"]', '[autocomplete="address-level2"]', '[data-automation-id="addressSection_city"]', '[data-automation-id="city"]']
-        },
-        "personal.state": {
-            regex: /state|province|region|county/i,
-            selectors: ['input[name*="state"]', 'input[name*="province"]', '[autocomplete="address-level1"]', '[data-automation-id="addressSection_region"]', '[data-automation-id="region"]']
-        },
-        "personal.zip": {
-            regex: /zip\s*code|postal\s*code|pincode|zip/i,
-            selectors: ['input[name*="zip"]', 'input[name*="postal"]', '[autocomplete="postal-code"]', '[data-automation-id="addressSection_postalCode"]', '[data-automation-id="postalCode"]']
-        },
-        "personal.country": {
-            regex: /country/i,
-            selectors: ['input[name*="country"]', 'select[name*="country"]', '[autocomplete="country"]', '[data-automation-id="addressSection_countryRegion"]', '[data-automation-id="countryRegion"]']
         },
         // Legal & Authorization
         "legal.authorized": {
