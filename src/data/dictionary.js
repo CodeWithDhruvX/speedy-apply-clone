@@ -25,7 +25,7 @@ window.SpeedyDictionary = {
         },
         "personal.city": {
             regex: /city|town|location\s*\(?city\)?/i,
-            selectors: ['input[name*="city"]', 'input[name*="town"]', '[autocomplete="address-level2"]', '[data-automation-id="addressSection_city"]', '[data-automation-id="city"]']
+            selectors: ['input[name*="city"]', 'input[name*="town"]', '[autocomplete="address-level2"]', '[data-automation-id="addressSection_city"]', '[data-automation-id="city"]', '#applicant\\.city', 'input[name*="applicant"][name*="city"]']
         },
         "personal.state": {
             regex: /state|province|region|county/i,
