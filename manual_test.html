@@ -367,6 +367,74 @@
     </div>
 
     <div class="section">
+        <h2>New Features Testing</h2>
+        <!-- New Features Testing -->
+        <div class="form-section">
+            <h3>4. New Features & Gaps</h3>
+            <div class="form-group">
+                <label for="referral">How did you hear about us? (Referral)</label>
+                <select id="referral" name="source">
+                    <option value="">Select...</option>
+                    <option value="linkedin">LinkedIn</option>
+                    <option value="indeed">Indeed</option>
+                    <option value="referral">Employee Referral</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Willing to Relocate? (Radio)</label>
+                <div>
+                    <input type="radio" id="reloc_yes" name="relocation" value="yes">
+                    <label for="reloc_yes">Yes</label>
+                    <input type="radio" id="reloc_no" name="relocation" value="no">
+                    <label for="reloc_no">No</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="pronouns">Pronouns</label>
+                <input type="text" id="pronouns" name="pronouns" placeholder="e.g. He/Him">
+            </div>
+
+            <div class="form-group">
+                <label for="startDate">Start Date (Date Input)</label>
+                <input type="date" id="startDate" name="job_application[employment][][start_date]">
+            </div>
+
+            <div class="form-group">
+                <label for="phoneDisplay">Phone (Text input expecting formatting)</label>
+                <input type="text" id="phoneDisplay" name="phone" placeholder="(123) 456-7890">
+            </div>
+
+            <div class="form-group">
+                <label for="coverLetter">Cover Letter</label>
+                <textarea id="coverLetter" name="cover_letter" rows="4"></textarea>
+            </div>
+
+            <!-- Custom Dropdown Simulation -->
+            <div class="form-section">
+                <h4>Custom Dropdown (Div based)</h4>
+                <div class="form-group">
+                    <label id="custom_label">Department (Custom)</label>
+                    <div id="custom_dropdown" role="combobox" aria-haspopup="listbox" aria-expanded="false"
+                        style="border: 1px solid #ccc; padding: 8px; cursor: pointer; background: white;" tabindex="0"
+                        data-automation-id="dropdown-department">
+                        Select Department...
+                    </div>
+                    <ul id="custom_listbox" role="listbox" aria-labelledby="custom_label"
+                        style="display: none; border: 1px solid #ccc; margin-top: 5px; padding: 0; list-style: none;">
+                        <li role="option" style="padding: 5px; cursor: pointer;" onclick="selectCustom(this)">
+                            Engineering</li>
+                        <li role="option" style="padding: 5px; cursor: pointer;" onclick="selectCustom(this)">Sales</li>
+                        <li role="option" style="padding: 5px; cursor: pointer;" onclick="selectCustom(this)">Marketing
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
         <h2>Mock Instahyre / Foundit</h2>
         <div class="form-group">
             <label>Mobile Number</label>
@@ -438,13 +506,15 @@
                 },
                 legal: {
                     authorized: "Yes",
-                    sponsorship: "No"
+                    sponsorship: "No",
+                    relocation: "Yes"
                 },
                 eeoc: {
                     gender: "Male",
                     race: "Asian",
                     veteran: "No",
-                    disability: "No"
+                    disability: "No",
+                    pronouns: "He/Him"
                 },
                 profile: {
                     skills: "Java, Go, Python",
@@ -454,11 +524,15 @@
                     linkedin: "https://linkedin.com/in/testjohn",
                     portfolio: "https://testjohn.com"
                 },
+                documents: {
+                    coverLetter: "I am a great fit for this role."
+                },
                 preferences: {
                     experience: "5",
                     noticePeriod: "30 Days",
                     currentCtc: "20 LPA",
-                    expectedCtc: "30 LPA"
+                    expectedCtc: "30 LPA",
+                    referral: "LinkedIn"
                 },
                 education: [
                     {

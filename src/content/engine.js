@@ -226,6 +226,8 @@
                             window.SpeedyInjector.setRadioValue(input, value);
                         } else if (input.type === 'checkbox') {
                             window.SpeedyInjector.setCheckboxValue(input, value);
+                        } else if (input.tagName === 'DIV' || input.tagName === 'BUTTON' || input.getAttribute('role') === 'combobox') {
+                            window.SpeedyInjector.setCustomDropdownValue(input, value);
                         } else {
                             window.SpeedyInjector.setValue(input, value);
                         }
@@ -277,8 +279,8 @@
         getAllInputs: function (root) {
             let inputs = [];
 
-            // Standard inputs
-            const standard = root.querySelectorAll('input:not([type="hidden"]), select, textarea');
+            // Standard inputs + Custom Dropdowns (Workday, ARIA)
+            const standard = root.querySelectorAll('input:not([type="hidden"]), select, textarea, [role="combobox"], [role="button"][aria-haspopup], [data-automation-id*="dropdown"]');
             inputs = [...standard];
 
             // Shadow DOM traversal

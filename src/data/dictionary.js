@@ -146,6 +146,22 @@ window.SpeedyDictionary = {
         "profile.summary": {
             regex: /summary|headline|bio|about\s*me/i,
             selectors: ['textarea[name*="summary"]', 'textarea[name*="bio"]', 'textarea[name*="about"]', '[data-automation-id="summary"]']
+        },
+        "documents.coverLetter": {
+            regex: /cover\s*letter|cl/i,
+            selectors: ['textarea[name*="cover"]', 'textarea[name*="letter"]', '[data-automation-id="coverLetter"]']
+        },
+        "preferences.referral": {
+            regex: /how\s*did\s*you\s*hear|source/i,
+            selectors: ['select[name*="source"]', 'input[name*="source"]', '[data-automation-id="source"]']
+        },
+        "preferences.relocation": {
+            regex: /relocate|relocation/i,
+            selectors: ['input[name*="relocat"]', 'select[name*="relocat"]', '[data-automation-id="relocation"]']
+        },
+        "eeoc.pronouns": {
+            regex: /pronoun/i,
+            selectors: ['input[name*="pronoun"]', 'select[name*="pronoun"]', '[data-automation-id="pronouns"]']
         }
     }
 };
