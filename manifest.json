@@ -27,7 +27,9 @@
                 "https://*.instahyre.com/*",
                 "https://*.foundit.in/*",
                 "https://*.monsterindia.com/*",
-                "https://*.linkedin.com/*"
+                "https://*.linkedin.com/*",
+                "https://*.indeed.com/*",
+                "https://smartapply.indeed.com/*"
             ],
             "js": [
                 "src/data/dictionary.js",

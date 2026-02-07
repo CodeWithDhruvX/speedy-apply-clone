@@ -3,19 +3,19 @@ window.SpeedyDictionary = {
     mapping: {
         "personal.firstName": {
             regex: /first\s*name|given\s*name|fname|legal\s*name/i,
-            selectors: ['#first_name', 'input[name="first_name"]', 'input[name="firstName"]', '[autocomplete="given-name"]', '[data-automation-id="legalNameSection_firstName"]', '#user_name', 'input[name="job_application[first_name]"]', '[name="name"]', 'input[name="candidate_name"]', 'input[name="user_name"]'] // Added Greenhouse, generic name, Hirist
+            selectors: ['#first_name', 'input[name="first_name"]', 'input[name="firstName"]', '[autocomplete="given-name"]', '[data-automation-id="legalNameSection_firstName"]', '#user_name', 'input[name="job_application[first_name]"]', '[name="name"]', 'input[name="candidate_name"]', 'input[name="user_name"]', '#applicant\.firstName', 'input[name*="applicant"][name*="first"]'] // Added Greenhouse, generic name, Hirist, Indeed
         },
         "personal.lastName": {
             regex: /last\s*name|surname|lname|family\s*name/i,
-            selectors: ['#last_name', 'input[name="last_name"]', 'input[name="lastName"]', '[autocomplete="family-name"]', '[data-automation-id="legalNameSection_lastName"]', 'input[name="job_application[last_name]"]'] // Added Greenhouse
+            selectors: ['#last_name', 'input[name="last_name"]', 'input[name="lastName"]', '[autocomplete="family-name"]', '[data-automation-id="legalNameSection_lastName"]', 'input[name="job_application[last_name]"]', '#applicant\.lastName', 'input[name*="applicant"][name*="last"]'] // Added Greenhouse, Indeed
         },
         "personal.email": {
             regex: /email|e-mail/i,
-            selectors: ['#email', 'input[name="email"]', '[type="email"]', '[autocomplete="email"]', '[data-automation-id="email"]', '#user_email', 'input[name="job_application[email]"]'] // Added Greenhouse
+            selectors: ['#email', 'input[name="email"]', '[type="email"]', '[autocomplete="email"]', '[data-automation-id="email"]', '#user_email', 'input[name="job_application[email]"]', '#applicant\.email', 'input[name*="applicant"][name*="email"]'] // Added Greenhouse, Indeed
         },
         "personal.phone": {
             regex: /phone(?!.*code)|mobile|contact\s*number/i,
-            selectors: ['#phone', 'input[name="phone"]', '[type="tel"]', '[autocomplete="tel"]', '[data-automation-id="phone-number"]', '#user_mobile', 'input[name="job_application[phone]"]', 'input[name="mobile"]', 'input[name="mobile_number"]', 'input[name="phone_no"]', 'input[name="contact_number"]'] // Added Greenhouse, Instahyre, Foundit, Hirist
+            selectors: ['#phone', 'input[name="phone"]', '[type="tel"]', '[autocomplete="tel"]', '[data-automation-id="phone-number"]', '#user_mobile', 'input[name="job_application[phone]"]', 'input[name="mobile"]', 'input[name="mobile_number"]', 'input[name="phone_no"]', 'input[name="contact_number"]', '#applicant\.phoneNumber', 'input[name*="applicant"][name*="phone"]'] // Added Greenhouse, Instahyre, Foundit, Hirist, Indeed
         },
 
         // Address Components - MOVED UP to prioritize over generic Location
@@ -43,12 +43,12 @@ window.SpeedyDictionary = {
         // Generic Location (Fallback)
         "personal.location": {
             regex: /location|residence/i, // Removed 'city' from here
-            selectors: ['#address', '#location', '[autocomplete="address-level2"]', 'input[name="job_application[location]"]', 'input[name="current_location"]', 'input[name="current_city"]', 'input[name="job_location"]'] // Added Greenhouse, generic, Hirist
+            selectors: ['#address', '#location', '[autocomplete="address-level2"]', 'input[name="job_application[location]"]', 'input[name="current_location"]', 'input[name="current_city"]', 'input[name="job_location"]', '#applicant\.address', 'input[name*="applicant"][name*="address"]', 'input[name*="applicant"][name*="location"]'] // Added Greenhouse, generic, Hirist, Indeed
         },
 
         "links.linkedin": {
             regex: /linkedin/i,
-            selectors: ['input[name*="linkedin"]', '[id*="linkedin"]', 'input[name="job_application[answers][][text_value]"]'] // Note: Greenhouse often uses custom IDs for questions, this is a best guess for standard questions
+            selectors: ['input[name*="linkedin"]', '[id*="linkedin"]', 'input[name="job_application[answers][][text_value]"]', 'input[name*="applicant"][name*="linkedin"]'] // Note: Greenhouse often uses custom IDs for questions, this is a best guess for standard questions. Indeed added.
         },
         "links.github": {
             regex: /github/i,
