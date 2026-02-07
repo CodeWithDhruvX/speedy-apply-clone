@@ -211,14 +211,27 @@
             const inputs = this.getAllInputs(document.body);
             let filledCount = 0;
 
-            inputs.forEach(input => {
+            console.log(`SpeedyApply: Found ${inputs.length} input elements`);
+
+            inputs.forEach((input, index) => {
                 // if (input.dataset.speedyFilled) return; // Optional: Allow re-fill if data changed?
 
                 const key = window.SpeedyMatcher.identifyField(input);
+                const labelText = window.SpeedyMatcher.getLabelText(input);
+
+                // Skip Google Forms "Other:" fields (these are for radio/checkbox "Other" options)
+                if (labelText && (labelText.toLowerCase().includes('other response') || labelText.toLowerCase() === 'other')) {
+                    console.log(`[${index + 1}] SKIPPED "Other" field: name="${input.name}" type="${input.type}" label="${labelText}"`);
+                    return;
+                }
+
+                // Debug logging
+                console.log(`[${index + 1}] Input: name="${input.name}" type="${input.type}" id="${input.id}" label="${labelText}" -> Matched: ${key || 'NO MATCH'}`);
+
                 if (key) {
                     const value = this.getValueByKey(key);
                     if (value) {
-                        console.log(`SpeedyApply: Filling ${key}`);
+                        console.log(`SpeedyApply: Filling ${key} with "${value}"`);
 
                         if (input.tagName === 'SELECT') {
                             window.SpeedyInjector.setSelectValue(input, value, key);
@@ -234,6 +247,8 @@
                         input.dataset.speedyFilled = "true";
                         input.style.border = "2px solid #22c55e";
                         filledCount++;
+                    } else {
+                        console.log(`SpeedyApply: No value found for ${key}`);
                     }
                 }
             });
@@ -241,6 +256,7 @@
             if (filledCount > 0) {
                 this.logApplication();
             }
+            console.log(`SpeedyApply: Filled ${filledCount} fields`);
         },
 
         logApplication: async function () {
@@ -280,8 +296,30 @@
             let inputs = [];
 
             // Standard inputs + Custom Dropdowns (Workday, ARIA)
-            const standard = root.querySelectorAll('input:not([type="hidden"]):not([type="file"]), select, textarea, [role="combobox"], [role="button"][aria-haspopup], [data-automation-id*="dropdown"]');
+            const standard = root.querySelectorAll('input:not([type="hidden"]):not([type="file"]):not([type="submit"]), select, textarea, [role="combobox"], [role="button"][aria-haspopup], [data-automation-id*="dropdown"]');
             inputs = [...standard];
+
+            // Google Forms specific: Look for inputs in specific containers
+            if (window.location.href.includes('docs.google.com/forms')) {
+                const googleFormsInputs = root.querySelectorAll('[role="listitem"] input, [role="listitem"] textarea, .freebirdFormviewerComponentsQuestionTextRoot input, .freebirdFormviewerComponentsQuestionTextRoot textarea');
+                googleFormsInputs.forEach(input => {
+                    if (!inputs.includes(input) && input.type !== 'hidden' && input.type !== 'file') {
+                        inputs.push(input);
+                    }
+                });
+            }
+
+            // Filter out hidden/invisible inputs
+            inputs = inputs.filter(input => {
+                const style = window.getComputedStyle(input);
+                const isVisible = style.display !== 'none' &&
+                    style.visibility !== 'hidden' &&
+                    style.opacity !== '0' &&
+                    input.offsetParent !== null;
+                return isVisible || input.type === 'email' || input.type === 'tel' || input.type === 'text';
+            });
+
+            console.log(`getAllInputs: Found ${inputs.length} inputs after filtering`);
 
             // Shadow DOM traversal
             // Walk through all elements to find shadow roots
@@ -299,6 +337,17 @@
 
         getValueByKey: function (key) {
             // key is like "personal.firstName" or "education.school"
+
+            // Special handling for Full Name (combine first + last)
+            if (key === 'personal.fullName') {
+                if (profile.personal) {
+                    const { firstName, lastName } = profile.personal;
+                    if (firstName && lastName) return `${firstName} ${lastName}`;
+                    if (firstName) return firstName;
+                    if (lastName) return lastName;
+                }
+                return null;
+            }
 
             // Special handling for Generic Location if not explicitly set
             if (key === 'personal.location') {
@@ -363,7 +412,23 @@
     });
 
     // Run
-    // Delay slightly to ensure page stability?
-    setTimeout(() => Engine.init(), 1000);
+    // Google Forms needs extra time to load fields dynamically
+    const isGoogleForms = window.location.href.includes('docs.google.com/forms');
+    const initialDelay = isGoogleForms ? 3000 : 1000;
+
+    console.log(`SpeedyApply: Waiting ${initialDelay}ms for page to fully load...`);
+
+    setTimeout(() => {
+        Engine.init();
+
+        // For Google Forms, do an additional scan after a delay
+        if (isGoogleForms) {
+            console.log("SpeedyApply: Google Forms detected - will retry scan after 2 seconds");
+            setTimeout(() => {
+                console.log("SpeedyApply: Google Forms retry scan starting...");
+                Engine.scanAndFill(false);
+            }, 2000);
+        }
+    }, initialDelay);
 
 })();

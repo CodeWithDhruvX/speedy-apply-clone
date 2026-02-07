@@ -66,6 +66,31 @@ window.SpeedyMatcher = {
             if (labelElement) return labelElement.innerText;
         }
 
+        // Option C.75: Google Forms - Look up the tree for question container
+        // Google Forms structure: input is deep in a [role="listitem"], and the question is in a [role="heading"]
+        const listItem = element.closest('[role="listitem"]');
+        if (listItem) {
+            // Try to find the heading within this list item
+            const heading = listItem.querySelector('[role="heading"]');
+            if (heading) {
+                const text = heading.innerText.trim();
+                if (text) {
+                    console.log(`Found Google Forms label via role=heading: "${text}"`);
+                    return text;
+                }
+            }
+
+            // Alternative: Look for any div with specific classes that contain question text
+            const questionDiv = listItem.querySelector('.freebirdFormviewerComponentsQuestionBaseTitle, .freebirdFormviewerComponentsQuestionBaseHeader, [jsname="wSAScd"]');
+            if (questionDiv) {
+                const text = questionDiv.innerText.trim();
+                if (text) {
+                    console.log(`Found Google Forms label via class: "${text}"`);
+                    return text;
+                }
+            }
+        }
+
         // Option D: Preceding Sibling (Common in various forms)
         // Look for a label-like element immediately before the input container
         // Workday often nests input in a div, and the label is in a previous div

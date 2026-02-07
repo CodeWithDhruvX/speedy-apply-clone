@@ -29,7 +29,8 @@
                 "https://*.monsterindia.com/*",
                 "https://*.linkedin.com/*",
                 "https://*.indeed.com/*",
-                "https://smartapply.indeed.com/*"
+                "https://smartapply.indeed.com/*",
+                "https://docs.google.com/forms/*"
             ],
             "js": [
                 "src/data/dictionary.js",
