@@ -102,11 +102,11 @@ window.SpeedyDictionary = {
         },
         "work.startDate": {
             regex: /start\s*date|from/i,
-            selectors: ['input[name*="start"]', 'input[name*="from"]', 'input[name="job_application[employment][][start_date]"]'] // Added Greenhouse
+            selectors: ['input[name*="start"]', 'select[name*="start"]', 'input[name*="from"]', 'select[name*="from"]', 'input[name="job_application[employment][][start_date]"]'] // Added Greenhouse
         },
         "work.endDate": {
             regex: /end\s*date|to/i,
-            selectors: ['input[name*="end"]', 'input[name*="to"]', 'input[name="job_application[employment][][end_date]"]'] // Added Greenhouse
+            selectors: ['input[name*="end"]', 'select[name*="end"]', 'input[name*="to"]', 'select[name*="to"]', 'input[name="job_application[employment][][end_date]"]'] // Added Greenhouse
         },
         "work.description": {
             regex: /description|responsibilities|duties/i,

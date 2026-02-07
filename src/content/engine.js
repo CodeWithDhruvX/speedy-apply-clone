@@ -221,15 +221,15 @@
                         console.log(`SpeedyApply: Filling ${key}`);
 
                         if (input.tagName === 'SELECT') {
-                            window.SpeedyInjector.setSelectValue(input, value);
+                            window.SpeedyInjector.setSelectValue(input, value, key);
                         } else if (input.type === 'radio') {
-                            window.SpeedyInjector.setRadioValue(input, value);
+                            window.SpeedyInjector.setRadioValue(input, value, key);
                         } else if (input.type === 'checkbox') {
-                            window.SpeedyInjector.setCheckboxValue(input, value);
+                            window.SpeedyInjector.setCheckboxValue(input, value, key);
                         } else if (input.tagName === 'DIV' || input.tagName === 'BUTTON' || input.getAttribute('role') === 'combobox') {
-                            window.SpeedyInjector.setCustomDropdownValue(input, value);
+                            window.SpeedyInjector.setCustomDropdownValue(input, value, key);
                         } else {
-                            window.SpeedyInjector.setValue(input, value);
+                            window.SpeedyInjector.setValue(input, value, key);
                         }
                         input.dataset.speedyFilled = "true";
                         input.style.border = "2px solid #22c55e";
@@ -248,7 +248,7 @@
                 // Simple debounce to avoid logging same page multiple times in one session
                 if (this.hasLogged) return;
 
-                const url = window.location.hostname;
+                const url = window.location.href;
                 // Try to guess role from title?
                 const role = document.title.split('-')[0].split('|')[0].trim().substring(0, 30);
 

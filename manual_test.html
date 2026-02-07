@@ -478,6 +478,45 @@
         </button>
     </div>
 
+    <div class="section">
+        <h2>7. Split Date Testing (Greenhouse Style)</h2>
+        <div class="form-group">
+            <label>Start Date</label>
+            <div style="display: flex; gap: 10px;">
+                <!-- Simulating Greenhouse weird names -->
+                <select name="job_application[employment][][start_date][2i]" id="s_month">
+                    <option value="">Month</option>
+                    <option value="1">January</option>
+                    <option value="2">February</option>
+                    <option value="3">March</option>
+                    <option value="4">April</option>
+                    <!-- ... -->
+                </select>
+                <select name="job_application[employment][][start_date][1i]" id="s_year">
+                    <option value="">Year</option>
+                    <option value="2015">2015</option>
+                    <option value="2016">2016</option>
+                    <option value="2017">2017</option>
+                    <option value="2018">2018</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>8. Workday Date Testing (Text Input)</h2>
+        <div class="form-group">
+            <label>From</label>
+            <!-- Workday often uses text inputs with localized format requirements -->
+            <input type="text" name="work.startDate.workday" data-automation-id="dateSection_startDate"
+                placeholder="MM/DD/YYYY">
+        </div>
+        <div class="form-group">
+            <label>To</label>
+            <input type="text" name="work.endDate.workday" data-automation-id="dateSection_endDate">
+        </div>
+    </div>
+
     <script>
         document.getElementById('trigger-fill').addEventListener('click', () => {
             if (window.postMessageMock) {

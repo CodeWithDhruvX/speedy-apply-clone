@@ -49,6 +49,11 @@
             <div class="card chart-section">
                 <div class="chart-header">
                     <h3>Application History</h3>
+                    <div class="chart-filters">
+                        <button class="filter-btn active" data-range="weekly">Weekly</button>
+                        <button class="filter-btn" data-range="monthly">Monthly</button>
+                        <button class="filter-btn" data-range="yearly">Yearly</button>
+                    </div>
                 </div>
                 <div class="chart-container">
                     <!-- Simple CSS Bar Chart -->
@@ -86,6 +91,8 @@
                     </select>
                     <button id="newProfileBtn" class="secondary-btn" title="Create New Profile">+ New</button>
                     <button id="renameProfileBtn" class="secondary-btn" title="Rename Current Profile">✎ Rename</button>
+                    <button id="duplicateProfileBtn" class="secondary-btn" title="Duplicate Current Profile">📋
+                        Duplicate</button>
                     <button id="deleteProfileBtn" class="danger-btn" title="Delete Current Profile">🗑️</button>
                     <button id="saveProfileBtn" class="primary-btn" style="margin-left: 10px;">Save Profile</button>
                 </div>

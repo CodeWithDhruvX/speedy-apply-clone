@@ -65,39 +65,121 @@ async function initDashboard() {
             // Show last 10
             logs.slice().reverse().slice(0, 10).forEach(log => {
                 const row = document.createElement('tr');
+                let displayUrl = log.site;
+                try {
+                    // Try to make it shorter but keep protocol: "https://domain.com/path..."
+                    const urlObj = new URL(log.site);
+                    const path = urlObj.pathname.length > 20 ? urlObj.pathname.substring(0, 20) + '...' : urlObj.pathname;
+                    displayUrl = urlObj.origin + path;
+                } catch (e) {
+                    // Fallback
+                    if (displayUrl.length > 40) displayUrl = displayUrl.substring(0, 40) + '...';
+                }
+
                 row.innerHTML = `
-                    <td>${log.site || 'Unknown Site'}</td>
+                    <td>
+                        <div class="url-cell">
+                            <span title="${log.site}">${displayUrl}</span>
+                            <button class="copy-btn" data-url="${log.site}" title="Copy URL">📋</button>
+                        </div>
+                    </td>
                     <td>${log.role || 'N/A'}</td>
                     <td>${new Date(log.timestamp).toLocaleDateString()} ${new Date(log.timestamp).toLocaleTimeString()}</td>
                     <td><span class="status-badge">Applied</span></td>
                 `;
                 tableBody.appendChild(row);
             });
+
+            // Add copy listeners
+            document.querySelectorAll('.copy-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const url = e.target.dataset.url;
+                    navigator.clipboard.writeText(url).then(() => {
+                        const original = e.target.textContent;
+                        e.target.textContent = '✅';
+                        setTimeout(() => e.target.textContent = original, 1000);
+                    });
+                });
+            });
         }
     }
 
-    // Render Chart (Last 7 Days)
+    // Setup Filter Listeners
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            // Update active state
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+
+            // Render chart
+            const range = e.target.dataset.range;
+            renderChart(logs, document.getElementById('activityChart'), range);
+        });
+    });
+
+    // Render Chart (Default: Weekly)
     const chart = document.getElementById('activityChart');
-    if (chart) renderChart(logs, chart);
+    if (chart) renderChart(logs, chart, 'weekly');
 }
 
-function renderChart(logs, chartElement) {
+function renderChart(logs, chartElement, range = 'weekly') {
     chartElement.innerHTML = ''; // Clear previous
-    const days = 7;
     const stats = {};
+    let labels = [];
+    let keys = [];
 
-    // Initialize last 7 days
-    for (let i = days - 1; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        stats[d.toDateString()] = 0;
+    // Helper to get local YYYY-MM-DD
+    const getLocalYMD = (date) => {
+        const offset = date.getTimezoneOffset();
+        const local = new Date(date.getTime() - (offset * 60 * 1000));
+        return local.toISOString().split('T')[0];
+    };
+
+    if (range === 'weekly') {
+        // Last 7 days
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const key = getLocalYMD(d);
+            stats[key] = 0;
+            keys.push(key);
+            labels.push(d.toLocaleDateString('en-US', { weekday: 'short' }));
+        }
+    } else if (range === 'monthly') {
+        // Last 30 days
+        for (let i = 29; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const key = getLocalYMD(d);
+            stats[key] = 0;
+            keys.push(key);
+            // Show label every 5 days
+            labels.push(i % 5 === 0 ? d.getDate() : '');
+        }
+    } else if (range === 'yearly') {
+        // Last 12 months
+        for (let i = 11; i >= 0; i--) {
+            const d = new Date();
+            d.setMonth(d.getMonth() - i);
+            const key = `${d.getFullYear()}-${d.getMonth()}`; // YYYY-M
+            stats[key] = 0;
+            keys.push(key);
+            labels.push(d.toLocaleDateString('en-US', { month: 'short' }));
+        }
     }
 
     // Fill counts
     logs.forEach(log => {
-        const d = new Date(log.timestamp).toDateString();
-        if (stats[d] !== undefined) {
-            stats[d]++;
+        const d = new Date(log.timestamp);
+        let key;
+        if (range === 'yearly') {
+            key = `${d.getFullYear()}-${d.getMonth()}`;
+        } else {
+            key = getLocalYMD(d);
+        }
+
+        if (stats[key] !== undefined) {
+            stats[key]++;
         }
     });
 
@@ -106,17 +188,16 @@ function renderChart(logs, chartElement) {
     const max = Math.max(...counts, 5); // Minimum scale of 5
 
     // Draw bars
-    Object.keys(stats).forEach(dateStr => {
-        const count = stats[dateStr];
+    keys.forEach((key, index) => {
+        const count = stats[key];
         const height = (count / max) * 100;
-        const dateObj = new Date(dateStr);
-        const dayLabel = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+        const label = labels[index];
 
         const col = document.createElement('div');
         col.className = 'bar-col';
         col.innerHTML = `
             <div class="bar" style="height: ${height}%" title="${count} applications"></div>
-            <div class="bar-label">${dayLabel}</div>
+            <div class="bar-label">${label}</div>
         `;
         chartElement.appendChild(col);
     });
@@ -133,10 +214,13 @@ function initProfile() {
     const deleteBtn = document.getElementById('deleteProfileBtn');
     const selector = document.getElementById('profileSelector');
 
+    const duplicateBtn = document.getElementById('duplicateProfileBtn');
+
     saveBtn.addEventListener('click', saveCurrentProfile);
     newBtn.addEventListener('click', createNewProfile);
     renameBtn.addEventListener('click', renameCurrentProfile);
     deleteBtn.addEventListener('click', deleteCurrentProfile);
+    duplicateBtn.addEventListener('click', duplicateCurrentProfile);
     selector.addEventListener('change', (e) => switchProfile(e.target.value));
 
     document.getElementById('addEducationBtn').addEventListener('click', () => addEducationItem());
@@ -353,6 +437,36 @@ async function saveCurrentProfile() {
         btn.textContent = originalText;
         btn.style.backgroundColor = '';
     }, 2000);
+}
+
+async function duplicateCurrentProfile() {
+    const current = profiles.find(p => p.id === activeProfileId);
+    if (!current) return;
+
+    const newProfile = {
+        id: 'profile-' + Date.now(),
+        name: "Copy of " + current.name,
+        // Deep copy the data
+        data: JSON.parse(JSON.stringify(current.data))
+    };
+
+    profiles.push(newProfile);
+    activeProfileId = newProfile.id;
+
+    await chrome.storage.local.set({ profiles, activeProfileId });
+
+    renderProfileSelector();
+    renderProfileForm();
+
+    // Feedback
+    const btn = document.getElementById('duplicateProfileBtn');
+    const originalText = btn.textContent;
+    btn.textContent = 'Duplicated!';
+    btn.style.backgroundColor = '#22c55e';
+    setTimeout(() => {
+        btn.textContent = originalText;
+        btn.style.backgroundColor = '';
+    }, 1500);
 }
 
 async function createNewProfile() {
