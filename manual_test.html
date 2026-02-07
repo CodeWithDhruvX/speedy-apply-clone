@@ -422,79 +422,107 @@
             }
         });
 
+        const mockStorageData = {
+            isAutoFillEnabled: true,
+            profile: {
+                personal: {
+                    firstName: "TestJohn",
+                    lastName: "TestDoe",
+                    email: "testjohn@example.com",
+                    phone: "+15550001111",
+                    street: "123 Test St",
+                    city: "Testville",
+                    state: "CA",
+                    zip: "90210",
+                    country: "USA"
+                },
+                legal: {
+                    authorized: "Yes",
+                    sponsorship: "No"
+                },
+                eeoc: {
+                    gender: "Male",
+                    race: "Asian",
+                    veteran: "No",
+                    disability: "No"
+                },
+                profile: {
+                    skills: "Java, Go, Python",
+                    summary: "Experienced Engineer"
+                },
+                links: {
+                    linkedin: "https://linkedin.com/in/testjohn",
+                    portfolio: "https://testjohn.com"
+                },
+                preferences: {
+                    experience: "5",
+                    noticePeriod: "30 Days",
+                    currentCtc: "20 LPA",
+                    expectedCtc: "30 LPA"
+                },
+                education: [
+                    {
+                        school: "MIT",
+                        degree: "Bachelor",
+                        field: "Computer Science",
+                        startDate: "2018-09",
+                        endDate: "2022-05"
+                    }
+                ],
+                work: [
+                    {
+                        company: "Google",
+                        title: "Software Engineer",
+                        startDate: "2022-06",
+                        endDate: "Present",
+                        description: "Developed cool stuff."
+                    }
+                ]
+            }
+        };
+
+        const storageListeners = [];
+
         window.chrome = {
             storage: {
                 local: {
                     get: (keys) => {
                         console.log("Mock Storage: Getting", keys);
-                        return Promise.resolve({
-                            profile: {
-                                personal: {
-                                    firstName: "TestJohn",
-                                    lastName: "TestDoe",
-                                    email: "testjohn@example.com",
-                                    phone: "+15550001111",
-                                    street: "123 Test St",
-                                    city: "Testville",
-                                    state: "CA",
-                                    zip: "90210",
-                                    country: "USA"
-                                },
-                                legal: {
-                                    authorized: "Yes",
-                                    sponsorship: "No"
-                                },
-                                eeoc: {
-                                    gender: "Male",
-                                    race: "Asian",
-                                    veteran: "No",
-                                    disability: "No"
-                                },
-                                profile: {
-                                    skills: "Java, Go, Python",
-                                    summary: "Experienced Engineer"
-                                },
-                                links: {
-                                    linkedin: "https://linkedin.com/in/testjohn",
-                                    portfolio: "https://testjohn.com"
-                                },
-                                preferences: {
-                                    experience: "5",
-                                    noticePeriod: "30 Days",
-                                    currentCtc: "20 LPA",
-                                    expectedCtc: "30 LPA"
-                                },
-                                education: [
-                                    {
-                                        school: "MIT",
-                                        degree: "Bachelor",
-                                        field: "Computer Science",
-                                        startDate: "2018-09",
-                                        endDate: "2022-05"
-                                    }
-                                ],
-                                work: [
-                                    {
-                                        company: "Google",
-                                        title: "Software Engineer",
-                                        startDate: "2022-06",
-                                        endDate: "Present",
-                                        description: "Developed cool stuff."
-                                    }
-                                ]
-                            }
-                        });
+                        // If keys is string, array, or null/undefined
+                        if (!keys) return Promise.resolve(mockStorageData);
+                        if (typeof keys === 'string') keys = [keys];
+                        if (Array.isArray(keys)) {
+                            const result = {};
+                            keys.forEach(k => result[k] = mockStorageData[k]);
+                            return Promise.resolve(result);
+                        }
+                        return Promise.resolve(mockStorageData);
                     },
                     set: (data) => {
                         console.log("Mock Storage: Setting", data);
+                        const changes = {};
+                        for (const key in data) {
+                            const oldValue = mockStorageData[key];
+                            const newValue = data[key];
+                            mockStorageData[key] = newValue;
+                            changes[key] = { oldValue, newValue };
+                        }
+                        // Trigger listeners
+                        storageListeners.forEach(cb => cb(changes, 'local'));
                         return Promise.resolve();
+                    }
+                },
+                onChanged: {
+                    addListener: (cb) => {
+                        console.log("Mock Storage: Listener added");
+                        storageListeners.push(cb);
                     }
                 }
             },
             runtime: {
                 onMessage: {
                     addListener: (callback) => {
-                        console.log("Mock Storage: Msg Listener added");
+                        console.log("Mock Message Listener added");
                         window.postMessageMock = callback;
                     }
                 }

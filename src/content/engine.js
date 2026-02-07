@@ -43,22 +43,75 @@
             });
 
             observer.observe(document.body, { childList: true, subtree: true });
+            // Storage Change Listener for syncing specific settings
+            chrome.storage.onChanged.addListener((changes, namespace) => {
+                if (namespace === 'local' && changes.isAutoFillEnabled) {
+                    this.updateToggleUI(changes.isAutoFillEnabled.newValue);
+                }
+            });
         },
 
-        createFloatingButton: function () {
-            if (document.getElementById('speedy-apply-fab')) return;
+        createFloatingButton: async function () {
+            if (document.getElementById('speedy-apply-container')) return;
 
-            const btn = document.createElement('button');
-            btn.id = 'speedy-apply-fab';
-            btn.innerText = '⚡';
-            btn.title = 'SpeedyApply: Fill Again';
-
-            // Styles
-            Object.assign(btn.style, {
+            // Container
+            const container = document.createElement('div');
+            container.id = 'speedy-apply-container';
+            Object.assign(container.style, {
                 position: 'fixed',
                 bottom: '20px',
                 right: '20px',
                 zIndex: '999999',
+                display: 'flex',
+                flexDirection: 'column', // Stack vertically
+                gap: '10px',
+                alignItems: 'center'
+            });
+
+            // 1. Toggle Button
+            const toggleBtn = document.createElement('button');
+            toggleBtn.id = 'speedy-apply-toggle';
+            toggleBtn.title = 'SpeedyApply: Enable/Disable';
+            Object.assign(toggleBtn.style, {
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                backgroundColor: '#f3f4f6',
+                color: '#374151',
+                border: '1px solid #d1d5db',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                cursor: 'pointer',
+                fontSize: '18px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s',
+                marginBottom: '5px'
+            });
+
+            toggleBtn.onclick = async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // Get current state
+                const storage = await chrome.storage.local.get('isAutoFillEnabled');
+                const currentState = storage.isAutoFillEnabled !== false; // Default true
+                const newState = !currentState;
+
+                // Save
+                await chrome.storage.local.set({ isAutoFillEnabled: newState });
+
+                // UI update specific to this button is handled by storage listener or immediacy
+                this.updateToggleUI(newState);
+
+                console.log(`SpeedyApply: Auto-fill ${newState ? 'Enabled' : 'Disabled'}`);
+            };
+
+            // 2. Fill Button (The main FAB)
+            const fillBtn = document.createElement('button');
+            fillBtn.id = 'speedy-apply-fab';
+            fillBtn.innerText = '⚡';
+            fillBtn.title = 'SpeedyApply: Fill Again';
+            Object.assign(fillBtn.style, {
                 width: '50px',
                 height: '50px',
                 borderRadius: '50%',
@@ -74,22 +127,46 @@
                 transition: 'transform 0.2s'
             });
 
-            btn.onmouseover = () => btn.style.transform = 'scale(1.1)';
-            btn.onmouseout = () => btn.style.transform = 'scale(1)';
+            fillBtn.onmouseover = () => fillBtn.style.transform = 'scale(1.1)';
+            fillBtn.onmouseout = () => fillBtn.style.transform = 'scale(1)';
 
-            btn.onclick = (e) => {
+            fillBtn.onclick = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 console.log("SpeedyApply: Manual FAB trigger");
                 this.scanAndFill(true); // Force fill
 
                 // Visual feedback
-                const originalText = btn.innerText;
-                btn.innerText = '✅';
-                setTimeout(() => btn.innerText = originalText, 1000);
+                const originalText = fillBtn.innerText;
+                fillBtn.innerText = '✅';
+                setTimeout(() => fillBtn.innerText = originalText, 1000);
             };
 
-            document.body.appendChild(btn);
+            // Append
+            container.appendChild(toggleBtn);
+            container.appendChild(fillBtn);
+            document.body.appendChild(container);
+
+            // Initialize Toggle State
+            const storage = await chrome.storage.local.get('isAutoFillEnabled');
+            this.updateToggleUI(storage.isAutoFillEnabled !== false);
+        },
+
+        updateToggleUI: function (isEnabled) {
+            const btn = document.getElementById('speedy-apply-toggle');
+            if (!btn) return;
+
+            if (isEnabled) {
+                btn.innerText = '✅';
+                btn.style.backgroundColor = '#dcfce7'; // green-100
+                btn.style.color = '#166534'; // green-800
+                btn.title = "SpeedyApply is Enabled";
+            } else {
+                btn.innerText = '🚫';
+                btn.style.backgroundColor = '#fee2e2'; // red-100
+                btn.style.color = '#991b1b'; // red-800
+                btn.title = "SpeedyApply is Disabled";
+            }
         },
 
         scanAndFill: async function (force = false) {
