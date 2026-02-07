@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpeedyApply Test</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            border: 1px solid #ccc;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+        }
+
+        input {
+            padding: 5px;
+            width: 300px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🚀 SpeedyApply Logic Verification</h1>
+    <p>This page mocks the Chrome environment and loads the extension scripts to test logic.</p>
+
+    <div class="section">
+        <h2>Mock Greenhouse (ID based)</h2>
+        <div class="form-group">
+            <label for="first_name">First Name</label>
+            <input type="text" id="first_name">
+        </div>
+        <div class="form-group">
+            <label for="last_name">Last Name</label>
+            <input type="text" id="last_name">
+        </div>
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email">
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Mock Lever (Name based)</h2>
+        <div class="form-group">
+            <label>LinkedIn URL</label>
+            <input type="text" name="urls[LinkedIn]">
+        </div>
+        <div class="form-group">
+            <label>Portfolio URL</label>
+            <input type="text" name="urls[Portfolio]">
+        </div>
+        <div class="form-group">
+            <label>Phone</label>
+            <input type="text" name="phone">
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Mock Workday (Data Attributes)</h2>
+        <div class="form-group">
+            <label>First Name (Data ID)</label>
+            <input type="text" data-automation-id="legalNameSection_firstName">
+        </div>
+        <div class="form-group">
+            <label>Last Name (Data ID)</label>
+            <input type="text" data-automation-id="legalNameSection_lastName">
+        </div>
+    </div>
+
+    <script>
+        // Mock Chrome API
+        window.chrome = {
+            storage: {
+                local: {
+                    get: (keys) => {
+                        console.log("Mock Storage: Getting", keys);
+                        return Promise.resolve({
+                            profile: {
+                                personal: {
+                                    firstName: "TestJohn",
+                                    lastName: "TestDoe",
+                                    email: "testjohn@example.com",
+                                    phone: "+15550001111"
+                                },
+                                links: {
+                                    linkedin: "https://linkedin.com/in/testjohn",
+                                    portfolio: "https://testjohn.com"
+                                },
+                                work: {
+                                    noticePeriod: "30 Days",
+                                    currentCtc: "10 LPA",
+                                    expectedCtc: "15 LPA"
+                                }
+                            }
+                        });
+                    },
+                    set: (data) => {
+                        console.log("Mock Storage: Setting", data);
+                        return Promise.resolve();
+                    }
+                }
+            },
+            runtime: {
+                onMessage: {
+                    addListener: (callback) => {
+                        console.log("Mock Storage: Msg Listener added");
+                        window.postMessageMock = callback;
+                    }
+                }
+            }
+        };
+    </script>
+    <!-- Load Extension Scripts -->
+    <script src="src/data/dictionary.js"></script>
+    <script src="src/content/matcher.js"></script>
+    <script src="src/content/injector.js"></script>
+    <script src="src/content/engine.js"></script>
+</body>
+
+</html>

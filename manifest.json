@@ -1,0 +1,40 @@
+{
+    "manifest_version": 3,
+    "name": "SpeedyApply Open",
+    "version": "1.0",
+    "permissions": [
+        "storage",
+        "activeTab",
+        "scripting"
+    ],
+    "host_permissions": [
+        "<all_urls>"
+    ],
+    "action": {
+        "default_popup": "src/popup/index.html",
+        "default_title": "SpeedyApply Open"
+    },
+    "options_page": "src/options/index.html",
+    "content_scripts": [
+        {
+            "matches": [
+                "https://*.greenhouse.io/*",
+                "https://*.lever.co/*",
+                "https://*.myworkdayjobs.com/*",
+                "https://*.hirist.com/*",
+                "https://*.iimjobs.com/*",
+                "https://*.instahyre.com/*",
+                "https://*.foundit.in/*",
+                "https://*.monsterindia.com/*",
+                "https://*.linkedin.com/*"
+            ],
+            "js": [
+                "src/data/dictionary.js",
+                "src/content/matcher.js",
+                "src/content/injector.js",
+                "src/content/engine.js"
+            ],
+            "run_at": "document_idle"
+        }
+    ]
+}
