@@ -9,6 +9,7 @@
         body {
             font-family: sans-serif;
             padding: 20px;
+            padding-bottom: 100px;
         }
 
         .section {
@@ -57,6 +58,10 @@
     <div class="section">
         <h2>Mock Lever (Name based)</h2>
         <div class="form-group">
+            <label>Country Phone Code</label>
+            <input type="text" name="country_phone_code">
+        </div>
+        <div class="form-group">
             <label>LinkedIn URL</label>
             <input type="text" name="urls[LinkedIn]">
         </div>
@@ -80,10 +85,319 @@
             <label>Last Name (Data ID)</label>
             <input type="text" data-automation-id="legalNameSection_lastName">
         </div>
+        <!-- Standard Data IDs -->
+        <div class="form-group">
+            <label>Address Line 1</label>
+            <input type="text" data-automation-id="addressSection_addressLine1">
+        </div>
+        <div class="form-group">
+            <label>City</label>
+            <input type="text" data-automation-id="addressSection_city">
+        </div>
+        <div class="form-group">
+            <label>State / Region</label>
+            <input type="text" data-automation-id="addressSection_region">
+        </div>
+        <div class="form-group">
+            <label>Postal Code</label>
+            <input type="text" data-automation-id="addressSection_postalCode">
+        </div>
+        <div class="form-group">
+            <label>Country Region</label>
+            <input type="text" data-automation-id="addressSection_countryRegion">
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Mock Workday (Advanced - Newlines & Aria)</h2>
+        <p>Tests newline normalization and aria-labelledby.</p>
+
+        <!-- Newline Label -->
+        <div class="form-group">
+            <div style="font-weight:bold; margin-bottom:5px;">
+                Address Line 1
+            </div>
+            <div>
+                <input type="text"> <!-- Standard heuristic match -->
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div style="font-weight:bold; margin-bottom:5px;">
+                City
+                <span style="color:red">*</span>
+                <br>
+                <small>(Required)</small>
+            </div>
+            <div>
+                <input type="text"> <!-- Should match "City" despite extra text/newlines -->
+            </div>
+        </div>
+
+        <!-- Aria Labelledby -->
+        <div class="form-group">
+            <div id="lbl-postal" style="font-weight:bold; margin-bottom:5px;">Postal Code</div>
+            <div>
+                <input type="text" aria-labelledby="lbl-postal"> <!-- Should match by ID reference -->
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div style="font-weight:bold; margin-bottom:5px;">State</div>
+            <div>
+                <select>
+                    <option value="">Select One</option>
+                    <option value="CA">California</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Mock Conflict Check (Address vs Location)</h2>
+        <p>Label is just "Address". Should map to Street, NOT City/Location.</p>
+        <div class="form-group">
+            <label>Address</label>
+            <input type="text">
+        </div>
+        <div class="form-group">
+            <label>City</label>
+            <input type="text">
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Mock Education</h2>
+        <div class="form-group">
+            <label>School</label>
+            <input type="text" name="education[school_name]" id="school">
+        </div>
+        <div class="form-group">
+            <label>Degree</label>
+            <select name="education[degree]">
+                <option value="">Select</option>
+                <option value="Associate">Associate</option>
+                <option value="Bachelor">Bachelor</option>
+                <option value="Master">Master</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Field of Study</label>
+            <input type="text" name="education[major]">
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Mock Address</h2>
+        <div class="form-group">
+            <label>Street</label>
+            <input type="text" name="address_line1">
+        </div>
+        <div class="form-group">
+            <label>City</label>
+            <input type="text" name="city">
+        </div>
+        <div class="form-group">
+            <label>State</label>
+            <input type="text" name="state">
+        </div>
+        <div class="form-group">
+            <label>Zip</label>
+            <input type="text" name="zip">
+        </div>
+        <div class="form-group">
+            <label>Country</label>
+            <select name="country">
+                <option value="">Select</option>
+                <option value="USA">USA</option>
+                <option value="Canada">Canada</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Mock Legal & Demographics</h2>
+        <div class="form-group">
+            <label>Authorized to Work?</label>
+            <label><input type="radio" name="authorized" value="Yes"> Yes</label>
+            <label><input type="radio" name="authorized" value="No"> No</label>
+        </div>
+        <div class="form-group">
+            <label>Sponsorship Required?</label>
+            <label><input type="radio" name="sponsorship" value="Yes"> Yes</label>
+            <label><input type="radio" name="sponsorship" value="No"> No</label>
+        </div>
+        <div class="form-group">
+            <label>Gender</label>
+            <select name="gender">
+                <option value="">Select</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Race</label>
+            <select name="race">
+                <option value="">Select</option>
+                <option value="Asian">Asian</option>
+                <option value="White">White</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Mock Profile Extras</h2>
+        <div class="form-group">
+            <label>Skills</label>
+            <textarea name="skills" rows="2"></textarea>
+        </div>
+        <div class="form-group">
+            <label>Summary</label>
+            <textarea name="summary" rows="2"></textarea>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Mock Preferences</h2>
+        <div class="form-group">
+            <label>Years of Experience</label>
+            <input type="text" name="experience">
+        </div>
+        <div class="form-group">
+            <label>Notice Period</label>
+            <input type="text" name="notice_period">
+        </div>
+        <div class="form-group">
+            <label>Current CTC</label>
+            <input type="text" name="current_ctc">
+        </div>
+        <div class="form-group">
+            <label>Expected CTC</label>
+            <input type="text" name="expected_ctc">
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Mock Work History</h2>
+        <div class="form-group">
+            <label>Company</label>
+            <input type="text" name="work[company]">
+        </div>
+        <div class="form-group">
+            <label>Job Title</label>
+            <input type="text" name="work[title]">
+        </div>
+        <div class="form-group">
+            <label>Description</label>
+            <textarea name="work[description]" rows="4" cols="50"></textarea>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Mock Greenhouse (Name based)</h2>
+        <div class="form-group">
+            <label>First Name</label>
+            <input type="text" name="job_application[first_name]">
+        </div>
+        <div class="form-group">
+            <label>Last Name</label>
+            <input type="text" name="job_application[last_name]">
+        </div>
+        <div class="form-group">
+            <label>Email</label>
+            <input type="text" name="job_application[email]">
+        </div>
+        <div class="form-group">
+            <label>Phone</label>
+            <input type="text" name="job_application[phone]">
+        </div>
+        <div class="form-group">
+            <label>Location</label>
+            <input type="text" name="job_application[location]">
+        </div>
+        <div class="form-group">
+            <label>Gender</label>
+            <select name="job_application[gender]">
+                <option value="">Select</option>
+                <option value="1">Male</option>
+                <option value="2">Female</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Race</label>
+            <select name="job_application[race]">
+                <option value="">Select</option>
+                <option value="1">Asian</option>
+                <option value="2">White</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Mock Lever (Expanded)</h2>
+        <div class="form-group">
+            <label>Current Company</label>
+            <input type="text" name="current-company">
+        </div>
+        <div class="form-group">
+            <label>Current CTC</label>
+            <input type="text" name="current-ctc">
+        </div>
+        <div class="form-group">
+            <label>Expected CTC</label>
+            <input type="text" name="expected-ctc">
+        </div>
+        <div class="form-group">
+            <label>Notice Period</label>
+            <input type="text" name="notice-period">
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Mock Hirist / IIMJobs</h2>
+        <div class="form-group">
+            <label>Candidate Name</label>
+            <label>Experience Years</label>
+            <input type="text" name="experience_years">
+        </div>
+        <div class="form-group">
+            <label>Current Location</label>
+            <input type="text" name="current_location">
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Mock Instahyre / Foundit</h2>
+        <div class="form-group">
+            <label>Mobile Number</label>
+            <input type="text" name="mobile_number">
+        </div>
+        <div class="form-group">
+            <label>Mobile (Foundit)</label>
+            <input type="text" name="mobile">
+        </div>
+    </div>
+
+    <div class="section" style="position: sticky; bottom: 0; background: white; border-top: 2px solid #ccc;">
+        <h2>Actions</h2>
+        <button id="trigger-fill"
+            style="padding: 10px 20px; font-size: 16px; background: #22c55e; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            ⚡ Trigger Autofill
+        </button>
     </div>
 
     <script>
-        // Mock Chrome API
+        document.getElementById('trigger-fill').addEventListener('click', () => {
+            if (window.postMessageMock) {
+                console.log("Btn Click: Triggering Mock Message");
+                window.postMessageMock({ action: "fill" }, {}, (response) => {
+                    console.log("Mock Response:", response);
+                });
+            } else {
+                console.warn("Mock Message Listener not registered yet!");
+            }
+        });
+
         window.chrome = {
             storage: {
                 local: {
@@ -95,17 +409,55 @@
                                     firstName: "TestJohn",
                                     lastName: "TestDoe",
                                     email: "testjohn@example.com",
-                                    phone: "+15550001111"
+                                    phone: "+15550001111",
+                                    street: "123 Test St",
+                                    city: "Testville",
+                                    state: "CA",
+                                    zip: "90210",
+                                    country: "USA"
+                                },
+                                legal: {
+                                    authorized: "Yes",
+                                    sponsorship: "No"
+                                },
+                                eeoc: {
+                                    gender: "Male",
+                                    race: "Asian",
+                                    veteran: "No",
+                                    disability: "No"
+                                },
+                                profile: {
+                                    skills: "Java, Go, Python",
+                                    summary: "Experienced Engineer"
                                 },
                                 links: {
                                     linkedin: "https://linkedin.com/in/testjohn",
                                     portfolio: "https://testjohn.com"
                                 },
-                                work: {
+                                preferences: {
+                                    experience: "5",
                                     noticePeriod: "30 Days",
-                                    currentCtc: "10 LPA",
-                                    expectedCtc: "15 LPA"
-                                }
+                                    currentCtc: "20 LPA",
+                                    expectedCtc: "30 LPA"
+                                },
+                                education: [
+                                    {
+                                        school: "MIT",
+                                        degree: "Bachelor",
+                                        field: "Computer Science",
+                                        startDate: "2018-09",
+                                        endDate: "2022-05"
+                                    }
+                                ],
+                                work: [
+                                    {
+                                        company: "Google",
+                                        title: "Software Engineer",
+                                        startDate: "2022-06",
+                                        endDate: "Present",
+                                        description: "Developed cool stuff."
+                                    }
+                                ]
                             }
                         });
                     },

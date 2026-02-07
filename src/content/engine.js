@@ -2,19 +2,24 @@
     console.log("🚀 SpeedyApply Engine Loaded");
 
     // Load User Data
-    const storage = await chrome.storage.local.get('profile');
-    const profile = storage.profile;
+    const storage = await chrome.storage.local.get(['profile', 'profiles', 'activeProfileId']);
+    let profile = null;
+
+    if (storage.profiles && storage.activeProfileId) {
+        const active = storage.profiles.find(p => p.id === storage.activeProfileId);
+        if (active) profile = active.data;
+    } else if (storage.profile) {
+        // Fallback for old data or immediate migration
+        profile = storage.profile;
+    }
 
     if (!profile) {
-        console.log("SpeedyApply: No profile data found. Please set up your profile.");
+        console.log("SpeedyApply: No active profile found. Please set up your profile.");
         return;
     }
 
     // Flatten profile for easier lookup: "personal.firstName" -> "John"
-    // We keep the original nested 'profile' for structure access if needed,
-    // and flatProfile for direct key lookup if we used that.
-    // The previous code usage in scanAndFill used 'this.getValueByKey' which uses 'profile'.
-    // matches: const profile = storage.profile; created at line 6.
+    // matches: const profile = ... created above.
 
     // We also need to fix 'window.SpeedyInjector' calls to be safe if checking existence.
     // But they should exist.
@@ -23,6 +28,9 @@
         init: function () {
             // Initial scan
             this.scanAndFill();
+
+            // Inject Floating Action Button
+            this.createFloatingButton();
 
             // Observer for dynamic content (Single Page Apps)
             const observer = new MutationObserver((mutations) => {
@@ -37,20 +45,97 @@
             observer.observe(document.body, { childList: true, subtree: true });
         },
 
-        scanAndFill: function () {
+        createFloatingButton: function () {
+            if (document.getElementById('speedy-apply-fab')) return;
+
+            const btn = document.createElement('button');
+            btn.id = 'speedy-apply-fab';
+            btn.innerText = '⚡';
+            btn.title = 'SpeedyApply: Fill Again';
+
+            // Styles
+            Object.assign(btn.style, {
+                position: 'fixed',
+                bottom: '20px',
+                right: '20px',
+                zIndex: '999999',
+                width: '50px',
+                height: '50px',
+                borderRadius: '50%',
+                backgroundColor: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                cursor: 'pointer',
+                fontSize: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'transform 0.2s'
+            });
+
+            btn.onmouseover = () => btn.style.transform = 'scale(1.1)';
+            btn.onmouseout = () => btn.style.transform = 'scale(1)';
+
+            btn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log("SpeedyApply: Manual FAB trigger");
+                this.scanAndFill(true); // Force fill
+
+                // Visual feedback
+                const originalText = btn.innerText;
+                btn.innerText = '✅';
+                setTimeout(() => btn.innerText = originalText, 1000);
+            };
+
+            document.body.appendChild(btn);
+        },
+
+        scanAndFill: async function (force = false) {
+            // RE-FETCH PROFILE DATA to ensure we use the latest active profile
+            const storage = await chrome.storage.local.get(['profile', 'profiles', 'activeProfileId', 'isAutoFillEnabled']);
+            let currentProfileData = null;
+
+            // Check if auto-fill is enabled
+            if (!force && storage.isAutoFillEnabled === false) {
+                console.log("SpeedyApply: Auto-fill disabled by user.");
+                return;
+            }
+
+            if (storage.profiles && storage.activeProfileId) {
+                const active = storage.profiles.find(p => p.id === storage.activeProfileId);
+                if (active) currentProfileData = active.data;
+            } else if (storage.profile) {
+                currentProfileData = storage.profile;
+            }
+
+            if (!currentProfileData) {
+                console.log("SpeedyApply: No active profile found for autofill.");
+                return;
+            }
+
+            // Update the global 'profile' variable used by getValueByKey helper
+            profile = currentProfileData;
+
             const inputs = this.getAllInputs(document.body);
             let filledCount = 0;
 
             inputs.forEach(input => {
-                if (input.dataset.speedyFilled) return;
+                // if (input.dataset.speedyFilled) return; // Optional: Allow re-fill if data changed?
 
                 const key = window.SpeedyMatcher.identifyField(input);
                 if (key) {
                     const value = this.getValueByKey(key);
                     if (value) {
                         console.log(`SpeedyApply: Filling ${key}`);
+
                         if (input.tagName === 'SELECT') {
                             window.SpeedyInjector.setSelectValue(input, value);
+                        } else if (input.type === 'radio') {
+                            window.SpeedyInjector.setRadioValue(input, value);
+                        } else if (input.type === 'checkbox') {
+                            window.SpeedyInjector.setCheckboxValue(input, value);
                         } else {
                             window.SpeedyInjector.setValue(input, value);
                         }
@@ -114,10 +199,21 @@
         },
 
         getValueByKey: function (key) {
-            // key is like "personal.firstName"
+            // key is like "personal.firstName" or "education.school"
             const parts = key.split('.');
             if (parts.length === 2 && profile[parts[0]]) {
-                return profile[parts[0]][parts[1]];
+                const section = profile[parts[0]];
+
+                // Handle Arrays (Education, Work) - Default to 1st item
+                if (Array.isArray(section)) {
+                    if (section.length > 0) {
+                        return section[0][parts[1]];
+                    }
+                    return null;
+                }
+
+                // Handle Objects (Personal, Links)
+                return section[parts[1]];
             }
             return null;
         },
@@ -147,7 +243,7 @@
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (request.action === "fill") {
             console.log("SpeedyApply: Manual fill triggered");
-            Engine.scanAndFill();
+            Engine.scanAndFill(true); // Force fill
             sendResponse({ status: "done" });
         }
     });

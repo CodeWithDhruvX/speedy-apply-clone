@@ -13,78 +13,198 @@
     <div class="container">
         <header>
             <div class="logo">🚀 SpeedyApply</div>
+            <div class="header-controls">
+                <label class="switch" title="Enable/Disable Auto-fill">
+                    <input type="checkbox" id="autoFillToggle" checked>
+                    <span class="slider round"></span>
+                </label>
+                <select id="profileSelector" class="profile-select">
+                    <!-- Options injected by JS -->
+                </select>
+            </div>
             <p class="subtitle">Your Data, Your Rules</p>
         </header>
 
         <form id="profileForm">
             <div class="tabs">
                 <button type="button" class="tab-btn active" data-tab="personal">Personal</button>
+                <button type="button" class="tab-btn" data-tab="address">Address</button>
                 <button type="button" class="tab-btn" data-tab="links">Links</button>
                 <button type="button" class="tab-btn" data-tab="work">Work</button>
+                <button type="button" class="tab-btn" data-tab="profile">Profile</button>
+                <button type="button" class="tab-btn" data-tab="legal">Legal</button>
             </div>
 
             <div class="tab-content active" id="personal">
                 <div class="form-group">
                     <label>First Name</label>
-                    <input type="text" name="personal.firstName" placeholder="John">
+                    <input type="text" id="p-firstName" name="personal.firstName" placeholder="John">
                 </div>
+                <!-- ... existing personal fields ... -->
                 <div class="form-group">
                     <label>Last Name</label>
-                    <input type="text" name="personal.lastName" placeholder="Doe">
+                    <input type="text" id="p-lastName" name="personal.lastName" placeholder="Doe">
                 </div>
                 <div class="form-group">
                     <label>Email</label>
-                    <input type="email" name="personal.email" placeholder="john@example.com">
+                    <input type="email" id="p-email" name="personal.email" placeholder="john@example.com">
                 </div>
                 <div class="form-group">
                     <label>Phone</label>
-                    <input type="tel" name="personal.phone" placeholder="+1234567890">
+                    <input type="tel" id="p-phone" name="personal.phone" placeholder="+1234567890">
+                </div>
+            </div>
+
+            <div class="tab-content" id="address">
+                <div class="form-group">
+                    <label>Street Address</label>
+                    <input type="text" id="a-street" name="personal.street" placeholder="123 Main St">
                 </div>
                 <div class="form-group">
-                    <label>Location</label>
-                    <input type="text" name="personal.location" placeholder="San Francisco, CA">
+                    <label>City</label>
+                    <input type="text" id="a-city" name="personal.city" placeholder="San Francisco">
+                </div>
+                <div class="form-group">
+                    <label>State / Province</label>
+                    <input type="text" id="a-state" name="personal.state" placeholder="CA">
+                </div>
+                <div class="form-group">
+                    <label>Zip / Postal Code</label>
+                    <input type="text" id="a-zip" name="personal.zip" placeholder="94105">
+                </div>
+                <div class="form-group">
+                    <label>Country</label>
+                    <input type="text" id="a-country" name="personal.country" placeholder="USA">
+                </div>
+                <div class="form-group">
+                    <label>Full Location String (Legacy)</label>
+                    <input type="text" id="p-location" name="personal.location" placeholder="San Francisco, CA, USA">
                 </div>
             </div>
 
             <div class="tab-content" id="links">
+                <!-- ... existing links ... -->
                 <div class="form-group">
                     <label>LinkedIn URL</label>
-                    <input type="url" name="links.linkedin" placeholder="https://linkedin.com/in/...">
+                    <input type="url" id="l-linkedin" name="links.linkedin" placeholder="https://linkedin.com/in/...">
                 </div>
                 <div class="form-group">
                     <label>GitHub URL</label>
-                    <input type="url" name="links.github" placeholder="https://github.com/...">
+                    <input type="url" id="l-github" name="links.github" placeholder="https://github.com/...">
                 </div>
                 <div class="form-group">
                     <label>Portfolio URL</label>
-                    <input type="url" name="links.portfolio" placeholder="https://...">
+                    <input type="url" id="l-portfolio" name="links.portfolio" placeholder="https://...">
                 </div>
                 <div class="form-group">
                     <label>Twitter/X</label>
-                    <input type="url" name="links.twitter" placeholder="https://twitter.com/...">
+                    <input type="url" id="l-twitter" name="links.twitter" placeholder="https://twitter.com/...">
                 </div>
             </div>
 
             <div class="tab-content" id="work">
                 <div class="form-group">
+                    <label>Current Company</label>
+                    <input type="text" name="work.company" placeholder="Acme Corp">
+                </div>
+                <div class="form-group">
+                    <label>Job Title</label>
+                    <input type="text" name="work.title" placeholder="Senior Engineer">
+                </div>
+                <div class="form-group">
+                    <label>Experience (Years)</label>
+                    <input type="text" name="preferences.experience" placeholder="5">
+                </div>
+                <div class="form-group">
                     <label>Notice Period</label>
-                    <input type="text" name="work.noticePeriod" placeholder="30 Days / Immediate">
+                    <input type="text" name="preferences.noticePeriod" placeholder="30 Days / Immediate">
                 </div>
                 <div class="form-group">
                     <label>Current CTC</label>
-                    <input type="text" name="work.currentCtc" placeholder="e.g. 20 LPA">
+                    <input type="text" name="preferences.currentCtc" placeholder="e.g. 20 LPA">
                 </div>
                 <div class="form-group">
                     <label>Expected CTC</label>
-                    <input type="text" name="work.expectedCtc" placeholder="e.g. 30 LPA">
+                    <input type="text" name="preferences.expectedCtc" placeholder="e.g. 30 LPA">
+                </div>
+            </div>
+
+            <div class="tab-content" id="profile">
+                <div class="form-group">
+                    <label>Skills (Comma Separated)</label>
+                    <textarea id="pr-skills" name="profile.skills" rows="2"
+                        placeholder="Java, Python, React..."></textarea>
                 </div>
                 <div class="form-group">
-                    <label>Years of Experience</label>
-                    <input type="text" name="work.experience" placeholder="5">
+                    <label>Summary / Bio</label>
+                    <textarea id="pr-summary" name="profile.summary" rows="4"
+                        placeholder="Brief professional summary..."></textarea>
                 </div>
                 <div class="form-group">
-                    <label>Summary/Bio</label>
-                    <textarea name="work.summary" rows="3" placeholder="Brief professional summary..."></textarea>
+                    <label>Cover Letter (Generic)</label>
+                    <textarea id="doc-coverLetter" name="documents.coverLetter" rows="4"
+                        placeholder="Dear Hiring Manager..."></textarea>
+                </div>
+            </div>
+
+            <div class="tab-content" id="legal">
+                <h3>Work Authorization</h3>
+                <div class="form-group">
+                    <label>Authorized to Work? (Yes/No)</label>
+                    <select id="lg-authorized" name="legal.authorized">
+                        <option value="">Select...</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Require Sponsorship? (Yes/No)</label>
+                    <select id="lg-sponsorship" name="legal.sponsorship">
+                        <option value="">Select...</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                    </select>
+                </div>
+
+                <h3>Demographics</h3>
+                <div class="form-group">
+                    <label>Gender</label>
+                    <select id="de-gender" name="eeoc.gender">
+                        <option value="">Select...</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Non-binary">Non-binary</option>
+                        <option value="Decline">Decline to Self-Identify</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Race / Ethnicity</label>
+                    <select id="de-race" name="eeoc.race">
+                        <option value="">Select...</option>
+                        <option value="Asian">Asian</option>
+                        <option value="Black">Black or African American</option>
+                        <option value="Hispanic">Hispanic or Latino</option>
+                        <option value="White">White</option>
+                        <option value="Decline">Decline to Self-Identify</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Veteran Status</label>
+                    <select id="de-veteran" name="eeoc.veteran">
+                        <option value="">Select...</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                        <option value="Decline">Decline to Self-Identify</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Disability Status</label>
+                    <select id="de-disability" name="eeoc.disability">
+                        <option value="">Select...</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                        <option value="Decline">Decline to Self-Identify</option>
+                    </select>
                 </div>
             </div>
 
@@ -97,6 +217,77 @@
         </form>
     </div>
     <script src="popup.js"></script>
+    <style>
+        /* Header Controls */
+        .header-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 10px;
+            gap: 10px;
+        }
+
+        /* Toggle Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+
+        input:checked+.slider {
+            background-color: #3b82f6;
+        }
+
+        input:focus+.slider {
+            box-shadow: 0 0 1px #3b82f6;
+        }
+
+        input:checked+.slider:before {
+            -webkit-transform: translateX(20px);
+            -ms-transform: translateX(20px);
+            transform: translateX(20px);
+        }
+
+        /* Rounded sliders */
+        .slider.round {
+            border-radius: 34px;
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
+    </style>
 </body>
 
 </html>
