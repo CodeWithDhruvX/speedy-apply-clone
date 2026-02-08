@@ -15,15 +15,19 @@ window.SpeedyInjector = {
             }
         } else if (key && (key.includes('Date') || key.includes('start') || key.includes('end') || key.includes('dob'))) {
             // Text input but identified as a date field (common in Workday/ATS)
-            // Default to MM/DD/YYYY
             const date = new Date(value);
             if (!isNaN(date.getTime())) {
                 const day = String(date.getDate()).padStart(2, '0');
                 const month = String(date.getMonth() + 1).padStart(2, '0');
                 const year = date.getFullYear();
 
-                // Check if placeholder suggests otherwise (e.g. DD/MM/YYYY)
-                if (element.placeholder && element.placeholder.includes('DD/MM')) {
+                // Check environment hints for format
+                const placeholder = (element.placeholder || '').toLowerCase();
+                const ariaLabel = (element.getAttribute('aria-label') || '').toLowerCase();
+
+                if (placeholder.includes('mm/yyyy') || placeholder.includes('mm/yy') || ariaLabel.includes('mm/yyyy')) {
+                    finalValue = `${month}/${year}`;
+                } else if (placeholder.includes('dd/mm')) {
                     finalValue = `${day}/${month}/${year}`;
                 } else {
                     // Default to US format (Workday standard)

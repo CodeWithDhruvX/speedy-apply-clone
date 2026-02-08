@@ -352,6 +352,10 @@
 
             console.log(`SpeedyApply: Found ${inputs.length} input elements`);
 
+            // --- Array Handling Logic ---
+            // Track occurrences of array-based keys to fill 1st, 2nd, 3rd items correctly
+            const keyCounts = {};
+
             inputs.forEach((input, index) => {
                 // if (input.dataset.speedyFilled) return; // Optional: Allow re-fill if data changed?
 
@@ -368,9 +372,14 @@
                 console.log(`[${index + 1}] Input: name="${input.name}" type="${input.type}" id="${input.id}" label="${labelText}" -> Matched: ${key || 'NO MATCH'}`);
 
                 if (key) {
-                    const value = this.getValueByKey(key);
+                    // Update count for this key
+                    if (!keyCounts[key]) keyCounts[key] = 0;
+                    const currentIndex = keyCounts[key];
+                    keyCounts[key]++;
+
+                    const value = this.getValueByKey(key, currentIndex);
                     if (value) {
-                        console.log(`SpeedyApply: Filling ${key} with "${value}"`);
+                        console.log(`SpeedyApply: Filling ${key} [index ${currentIndex}] with "${value}"`);
 
                         if (input.tagName === 'SELECT') {
                             window.SpeedyInjector.setSelectValue(input, value, key);
@@ -387,7 +396,7 @@
                         input.style.border = "2px solid #22c55e";
                         filledCount++;
                     } else {
-                        console.log(`SpeedyApply: No value found for ${key}`);
+                        console.log(`SpeedyApply: No value found for ${key} [index ${currentIndex}]`);
                     }
                 }
             });
@@ -397,6 +406,7 @@
             }
             console.log(`SpeedyApply: Filled ${filledCount} fields`);
         },
+
 
         logApplication: async function () {
             try {
@@ -581,8 +591,8 @@
         getAllInputs: function (root) {
             let inputs = [];
 
-            // Standard inputs + Custom Dropdowns (Workday, ARIA)
-            const standard = root.querySelectorAll('input:not([type="hidden"]):not([type="file"]):not([type="submit"]), select, textarea, [role="combobox"], [role="button"][aria-haspopup], [data-automation-id*="dropdown"]');
+            // Standard inputs + Custom Dropdowns (Workday, ARIA) + Rich Text Editors
+            const standard = root.querySelectorAll('input:not([type="hidden"]):not([type="file"]):not([type="submit"]), select, textarea, [role="combobox"], [role="button"][aria-haspopup], [data-automation-id*="dropdown"], [role="textbox"]');
             inputs = [...standard];
 
             // Google Forms specific: Look for inputs in specific containers
@@ -621,7 +631,7 @@
             return inputs;
         },
 
-        getValueByKey: function (key) {
+        getValueByKey: function (key, index = 0) {
             // key is like "personal.firstName" or "education.school"
 
             // Special handling for Full Name (combine first + last)
@@ -653,12 +663,21 @@
             if (parts.length === 2 && profile[parts[0]]) {
                 const section = profile[parts[0]];
 
-                // Handle Arrays (Education, Work) - Default to 1st item
+                // Handle Arrays (Education, Work)
                 if (Array.isArray(section)) {
-                    if (section.length > 0) {
-                        return section[0][parts[1]];
+                    // Logic: We rely on the order of fields found in the DOM.
+                    // If we find 'work.company' for the 1st time, index=0. 2nd time, index=1.
+                    // But we must be careful: if the form asks for Title, then Company, then Title, then Company,
+                    // our simple Global counter for 'work.company' might not align with 'work.title'.
+
+                    // IMPROVEMENT: Use the max index found so far for ANY field in this section? 
+                    // Or keep counters per key?
+                    // Implementation choice: counters per key is the standard "best guess".
+
+                    if (index < section.length) {
+                        return section[index][parts[1]];
                     }
-                    return null;
+                    return null; // Out of bounds (e.g. form has 5 slots, user has 2 jobs)
                 }
 
                 // Handle Objects (Personal, Links)
