@@ -41,6 +41,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pageSpecificToggle = document.getElementById('pageSpecificToggle');
     const currentDomainEl = document.getElementById('currentDomain');
 
+    // 7. Drag Logic for Pinned Mode
+    const header = document.querySelector('header');
+    if (header) {
+        header.addEventListener('mousedown', (e) => {
+            // Ignore clicks on buttons/inputs inside header
+            if (e.target.closest('button') || e.target.closest('input') || e.target.closest('.slider')) return;
+
+            // Only trigger if in pinned mode (we can infer or check param)
+            // But checking param is safer
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('pinned') === 'true') {
+                e.preventDefault(); // Prevent text selection
+                // Send message to parent
+                window.parent.postMessage({
+                    type: 'SPEEDY_DRAG_START',
+                    screenX: e.screenX,
+                    screenY: e.screenY
+                }, '*');
+            }
+        });
+
+        // Listen for drag end to reset cursor (optional, if we changed it)
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'SPEEDY_DRAG_END') {
+                // Reset stuff if needed
+            }
+        });
+    }
+
     // Get current tab's domain
     try {
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });

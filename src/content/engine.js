@@ -689,6 +689,9 @@
         togglePinnedPopup: function (tabId) {
             const existing = document.getElementById('speedy-apply-pinned-popup');
             if (existing) {
+                // Remove message listener if we added one (though named function is better for removal, 
+                // here we just remove DOM, listener persists but checks for element)
+                window.removeEventListener('message', this.boundDragListener);
                 existing.remove();
                 console.log("SpeedyApply: Pinned popup removed");
             } else {
@@ -699,79 +702,18 @@
                     position: 'fixed',
                     top: '20px',
                     right: '20px',
-                    width: '360px', // Match original popup width
-                    height: '544px', // 520px (original) + 24px (header)
+                    width: '360px',
+                    height: '520px',
                     zIndex: '2147483647', // Max z-index
                     border: '1px solid #334155',
                     borderRadius: '12px',
                     boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
                     backgroundColor: '#0f172a',
-                    overflow: 'hidden'
-                });
-
-                // Create Header / Drag Handle
-                const dragHandle = document.createElement('div');
-                Object.assign(dragHandle.style, {
-                    width: '100%',
-                    height: '24px',
-                    backgroundColor: '#1e293b',
-                    cursor: 'grab',
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderBottom: '1px solid #334155'
+                    flexDirection: 'column'
                 });
 
-                // Drag Icon visual
-                const dragIcon = document.createElement('div');
-                dragIcon.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg>`;
-                dragHandle.appendChild(dragIcon);
-                container.appendChild(dragHandle);
-
-                // Make Draggable
-                let isDragging = false;
-                let startX, startY, initialLeft, initialTop;
-
-                dragHandle.addEventListener('mousedown', (e) => {
-                    isDragging = true;
-                    startX = e.clientX;
-                    startY = e.clientY;
-
-                    const rect = container.getBoundingClientRect();
-                    initialLeft = rect.left;
-                    initialTop = rect.top;
-
-                    dragHandle.style.cursor = 'grabbing';
-
-                    // Prevent text selection during drag
-                    document.body.style.userSelect = 'none';
-
-                    // Remove right/bottom constraints to allow free movement via left/top
-                    container.style.right = 'auto';
-                    container.style.bottom = 'auto';
-                    container.style.left = `${initialLeft}px`;
-                    container.style.top = `${initialTop}px`;
-                });
-
-                document.addEventListener('mousemove', (e) => {
-                    if (!isDragging) return;
-
-                    const dx = e.clientX - startX;
-                    const dy = e.clientY - startY;
-
-                    container.style.left = `${initialLeft + dx}px`;
-                    container.style.top = `${initialTop + dy}px`;
-                });
-
-                document.addEventListener('mouseup', () => {
-                    if (isDragging) {
-                        isDragging = false;
-                        dragHandle.style.cursor = 'grab';
-                        document.body.style.userSelect = '';
-                    }
-                });
-
-
+                // Load Iframe
                 const iframe = document.createElement('iframe');
                 let src = chrome.runtime.getURL('src/popup/index.html?pinned=true');
                 if (tabId) {
@@ -779,28 +721,187 @@
                 }
                 iframe.src = src;
                 iframe.allow = "clipboard-write";
-
                 Object.assign(iframe.style, {
                     width: '100%',
-                    height: 'calc(100% - 24px)', // Subtract drag handle height
+                    height: '100%',
                     border: 'none',
-                    display: 'block'
+                    flex: '1',
+                    pointerEvents: 'auto' // ensure interaction
                 });
-
-                // Allow resizing (both directions)
-                Object.assign(container.style, {
-                    resize: 'both',
-                    overflow: 'hidden', // Required for resize handle to show (usually bottom-right)
-                    minHeight: '200px',
-                    minWidth: '300px',
-                    maxWidth: '800px',
-                    maxHeight: '90vh'
-                });
-
                 container.appendChild(iframe);
 
+                // --- Resizing Logic (8 Handles) ---
+                const handles = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
+                const handleStyles = {
+                    position: 'absolute',
+                    zIndex: '2147483648', // Above iframe
+                    backgroundColor: 'transparent' // Invisible but clickable
+                };
+                const thickness = '6px';
+
+                handles.forEach(dir => {
+                    const el = document.createElement('div');
+                    el.className = `resize-handle-${dir}`;
+                    Object.assign(el.style, handleStyles);
+                    el.style.cursor = `${dir}-resize`;
+
+                    // Position
+                    if (dir.includes('n')) { el.style.top = `-${(parseInt(thickness) / 2)}px`; el.style.height = thickness; el.style.left = '0'; el.style.width = '100%'; }
+                    if (dir.includes('s')) { el.style.bottom = `-${(parseInt(thickness) / 2)}px`; el.style.height = thickness; el.style.left = '0'; el.style.width = '100%'; }
+                    if (dir.includes('e')) { el.style.right = `-${(parseInt(thickness) / 2)}px`; el.style.width = thickness; el.style.top = '0'; el.style.height = '100%'; }
+                    if (dir.includes('w')) { el.style.left = `-${(parseInt(thickness) / 2)}px`; el.style.width = thickness; el.style.top = '0'; el.style.height = '100%'; }
+
+                    // Corners (overwrite width/height/pos)
+                    if (dir === 'ne') { el.style.top = `-${(parseInt(thickness) / 2)}px`; el.style.right = `-${(parseInt(thickness) / 2)}px`; el.style.width = '12px'; el.style.height = '12px'; el.style.cursor = 'ne-resize'; }
+                    if (dir === 'nw') { el.style.top = `-${(parseInt(thickness) / 2)}px`; el.style.left = `-${(parseInt(thickness) / 2)}px`; el.style.width = '12px'; el.style.height = '12px'; el.style.cursor = 'nw-resize'; }
+                    if (dir === 'se') { el.style.bottom = `-${(parseInt(thickness) / 2)}px`; el.style.right = `-${(parseInt(thickness) / 2)}px`; el.style.width = '12px'; el.style.height = '12px'; el.style.cursor = 'se-resize'; }
+                    if (dir === 'sw') { el.style.bottom = `-${(parseInt(thickness) / 2)}px`; el.style.left = `-${(parseInt(thickness) / 2)}px`; el.style.width = '12px'; el.style.height = '12px'; el.style.cursor = 'sw-resize'; }
+
+                    container.appendChild(el);
+
+                    // Resize Event
+                    el.addEventListener('mousedown', (e) => initResize(e, dir));
+                });
+
+                // Resize Implementation
+                const initResize = (e, dir) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const startX = e.clientX;
+                    const startY = e.clientY;
+                    const rect = container.getBoundingClientRect();
+                    const startWidth = rect.width;
+                    const startHeight = rect.height;
+                    const startTop = rect.top;
+                    const startLeft = rect.left;
+
+                    // Cover iframe with overlay to prevent mouse capture loss
+                    const overlay = document.createElement('div');
+                    Object.assign(overlay.style, {
+                        position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                        zIndex: '2147483650', cursor: `${dir}-resize`
+                    });
+                    document.body.appendChild(overlay);
+
+                    const onMouseMove = (ev) => {
+                        const dx = ev.clientX - startX;
+                        const dy = ev.clientY - startY;
+
+                        let newWidth = startWidth;
+                        let newHeight = startHeight;
+                        let newTop = startTop;
+                        let newLeft = startLeft;
+
+                        if (dir.includes('e')) newWidth = startWidth + dx;
+                        if (dir.includes('w')) { newWidth = startWidth - dx; newLeft = startLeft + dx; }
+                        if (dir.includes('s')) newHeight = startHeight + dy;
+                        if (dir.includes('n')) { newHeight = startHeight - dy; newTop = startTop + dy; }
+
+                        // Constraint Min Size
+                        if (newWidth < 300) {
+                            if (dir.includes('w')) newLeft = startLeft + (startWidth - 300);
+                            newWidth = 300;
+                        }
+                        if (newHeight < 200) {
+                            if (dir.includes('n')) newTop = startTop + (startHeight - 200);
+                            newHeight = 200;
+                        }
+
+                        Object.assign(container.style, {
+                            width: `${newWidth}px`,
+                            height: `${newHeight}px`,
+                            top: `${newTop}px`,
+                            left: `${newLeft}px`
+                        });
+                    };
+
+                    const onMouseUp = () => {
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+                        overlay.remove();
+                    };
+
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                };
+
+                // --- Dragging Logic (via PostMessage from Header) ---
+                this.boundDragListener = (event) => {
+                    if (event.data && event.data.type === 'SPEEDY_DRAG_START') {
+                        // event.data also likely needs offset info? 
+                        // Actually, we can just use current mouse position relative to container top-left.
+                        // But since the mouse event happened inside iframe, coordinates are tricky.
+                        // STRATEGY: 
+                        // 1. Popup sends "start" on mousedown.
+                        // 2. We assume mouse is effectively "grabbing" the header.
+                        // 3. We use the *global* mouse position (we can track it loosely or just start tracking from the current global mouse position if we had it).
+                        // BETTER: The popup event passed screenX/screenY? 
+                        // No, simplest is: iframe Mousedown -> Message -> Engine puts Overlay -> Engine MouseMove moves container.
+
+                        const startX = event.data.screenX; // Use screen coords to sync across
+                        const startY = event.data.screenY;
+
+                        // We assume the user clicked *somewhere* in the header.
+                        // We'll calculate the initial offset based on current container position.
+                        // NOTE: We don't have the *exact* clientX/Y of the mouse inside the main page yet.
+                        // But wait, 'mousemove' on document will give us current mouse position instantly?
+                        // Let's rely on the first mousemove to establish delta if needed, 
+                        // OR better: The iframe event payload can include clientX/Y relative to screen, 
+                        // and we compare changes.
+
+                        const rect = container.getBoundingClientRect();
+                        const initialLeft = rect.left;
+                        const initialTop = rect.top;
+
+                        // Overlay to capture events outside iframe
+                        const overlay = document.createElement('div');
+                        Object.assign(overlay.style, {
+                            position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                            zIndex: '2147483650', cursor: 'grabbing'
+                        });
+                        document.body.appendChild(overlay);
+
+                        // Used to calculate delta
+                        let lastScreenX = startX;
+                        let lastScreenY = startY;
+
+                        const onDragMove = (ev) => {
+                            const curScreenX = ev.screenX; // use screen coordinates for consistency across frames
+                            const curScreenY = ev.screenY;
+
+                            const dx = curScreenX - lastScreenX;
+                            const dy = curScreenY - lastScreenY;
+
+                            const currentRect = container.getBoundingClientRect();
+                            container.style.left = `${currentRect.left + dx}px`;
+                            container.style.top = `${currentRect.top + dy}px`;
+
+                            lastScreenX = curScreenX;
+                            lastScreenY = curScreenY;
+                        };
+
+                        const onDragMoveLocal = (ev) => {
+                            // Fallback if screenX is not trusted or consistent in some envs
+                            // just normal drag logic
+                        };
+
+                        const onDragUp = () => {
+                            document.removeEventListener('mousemove', onDragMove);
+                            document.removeEventListener('mouseup', onDragUp);
+                            overlay.remove();
+                            // Notify iframe to reset cursor if needed
+                            iframe.contentWindow.postMessage({ type: 'SPEEDY_DRAG_END' }, '*');
+                        };
+
+                        document.addEventListener('mousemove', onDragMove);
+                        document.addEventListener('mouseup', onDragUp);
+                    }
+                };
+
+                window.addEventListener('message', this.boundDragListener);
+
                 document.body.appendChild(container);
-                console.log("SpeedyApply: Pinned popup injected");
+                console.log("SpeedyApply: Pinned popup injected with resize/drag support");
             }
         }
     };

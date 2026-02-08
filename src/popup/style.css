@@ -45,6 +45,12 @@ html {
 header {
     margin-bottom: 20px;
     text-align: center;
+    cursor: grab;
+    /* Indicate draggable */
+}
+
+header:active {
+    cursor: grabbing;
 }
 
 .logo {
