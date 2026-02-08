@@ -529,8 +529,8 @@
                     position: 'fixed',
                     top: '20px',
                     right: '20px',
-                    width: '400px', // Matches body width (360) + padding (32) + slack
-                    height: '560px', // Matches body height (520) + padding (32) + slack
+                    width: '360px', // Match original popup width
+                    height: '544px', // 520px (original) + 24px (header)
                     zIndex: '2147483647', // Max z-index
                     border: '1px solid #334155',
                     borderRadius: '12px',
@@ -539,9 +539,68 @@
                     overflow: 'hidden'
                 });
 
-                // Create Header (Drag handle? Close button?)
-                // Actually the popup itself has a Close button now when pinned.
-                // But a small drag handle might be nice later. For now, just the iframe.
+                // Create Header / Drag Handle
+                const dragHandle = document.createElement('div');
+                Object.assign(dragHandle.style, {
+                    width: '100%',
+                    height: '24px',
+                    backgroundColor: '#1e293b',
+                    cursor: 'grab',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderBottom: '1px solid #334155'
+                });
+
+                // Drag Icon visual
+                const dragIcon = document.createElement('div');
+                dragIcon.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg>`;
+                dragHandle.appendChild(dragIcon);
+                container.appendChild(dragHandle);
+
+                // Make Draggable
+                let isDragging = false;
+                let startX, startY, initialLeft, initialTop;
+
+                dragHandle.addEventListener('mousedown', (e) => {
+                    isDragging = true;
+                    startX = e.clientX;
+                    startY = e.clientY;
+
+                    const rect = container.getBoundingClientRect();
+                    initialLeft = rect.left;
+                    initialTop = rect.top;
+
+                    dragHandle.style.cursor = 'grabbing';
+
+                    // Prevent text selection during drag
+                    document.body.style.userSelect = 'none';
+
+                    // Remove right/bottom constraints to allow free movement via left/top
+                    container.style.right = 'auto';
+                    container.style.bottom = 'auto';
+                    container.style.left = `${initialLeft}px`;
+                    container.style.top = `${initialTop}px`;
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (!isDragging) return;
+
+                    const dx = e.clientX - startX;
+                    const dy = e.clientY - startY;
+
+                    container.style.left = `${initialLeft + dx}px`;
+                    container.style.top = `${initialTop + dy}px`;
+                });
+
+                document.addEventListener('mouseup', () => {
+                    if (isDragging) {
+                        isDragging = false;
+                        dragHandle.style.cursor = 'grab';
+                        document.body.style.userSelect = '';
+                    }
+                });
+
 
                 const iframe = document.createElement('iframe');
                 let src = chrome.runtime.getURL('src/popup/index.html?pinned=true');
@@ -551,15 +610,25 @@
                 iframe.src = src;
                 iframe.allow = "clipboard-write";
 
-
                 Object.assign(iframe.style, {
                     width: '100%',
-                    height: '100%',
+                    height: 'calc(100% - 24px)', // Subtract drag handle height
                     border: 'none',
                     display: 'block'
                 });
 
+                // Allow resizing (both directions)
+                Object.assign(container.style, {
+                    resize: 'both',
+                    overflow: 'hidden', // Required for resize handle to show (usually bottom-right)
+                    minHeight: '200px',
+                    minWidth: '300px',
+                    maxWidth: '800px',
+                    maxHeight: '90vh'
+                });
+
                 container.appendChild(iframe);
+
                 document.body.appendChild(container);
                 console.log("SpeedyApply: Pinned popup injected");
             }
