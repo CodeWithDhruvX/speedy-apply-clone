@@ -549,6 +549,8 @@
                     src += `&tabId=${tabId}`;
                 }
                 iframe.src = src;
+                iframe.allow = "clipboard-write";
+
 
                 Object.assign(iframe.style, {
                     width: '100%',

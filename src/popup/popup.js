@@ -325,11 +325,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Check if we are in "pinned" mode
     const urlParams = new URLSearchParams(window.location.search);
     const isPinned = urlParams.get('pinned') === 'true';
+    const tabIdParam = urlParams.get('tabId');
 
     if (isPinned) {
         if (pinBtn) pinBtn.style.display = 'none';
         if (unpinBtn) unpinBtn.style.display = 'flex';
-        document.body.classList.add('pinned-mode'); // Optional: for specific styling
+        document.body.classList.add('pinned-mode');
     } else {
         if (pinBtn) pinBtn.style.display = 'flex';
         if (unpinBtn) unpinBtn.style.display = 'none';
@@ -339,12 +340,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         pinBtn.addEventListener('click', async () => {
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
             if (tab) {
-                chrome.tabs.sendMessage(tab.id, { action: "toggle_pin_popup" }, () => {
-                    // Check for lastError to avoid "message port closed" errors if content script is missing
+                // Pass tabId so engine can pass it back to the pinned iframe
+                chrome.tabs.sendMessage(tab.id, { action: "toggle_pin_popup", tabId: tab.id }, () => {
                     if (chrome.runtime.lastError) {
                         console.error('Error sending message:', chrome.runtime.lastError);
                     }
-                    window.close(); // Close the extension popup
+                    window.close();
                 });
 
                 // Fallback: If callback never fires (e.g. content script not ready), close anyway after timeout
@@ -355,15 +356,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (unpinBtn) {
         unpinBtn.addEventListener('click', async () => {
-            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            // Use passed tabId if available, otherwise query
+            let targetTabId = tabIdParam ? parseInt(tabIdParam) : null;
 
-            // If running in iframe, currentWindow might be the extension window/iframe context?
-            // Actually chrome.tabs.query({active:true}) from an extension page usually returns the active tab of the main window.
+            if (!targetTabId) {
+                const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+                if (tab) targetTabId = tab.id;
+            }
 
-            if (tab) {
-                chrome.tabs.sendMessage(tab.id, { action: "toggle_pin_popup" }, (response) => {
+            if (targetTabId) {
+                chrome.tabs.sendMessage(targetTabId, { action: "toggle_pin_popup" }, (response) => {
                     if (chrome.runtime.lastError) {
-                        // This happens if the content script isn't listening (unlikely if we are pinned)
                         console.error("SpeedyApply: Unpin failed", chrome.runtime.lastError);
                     }
                 });
