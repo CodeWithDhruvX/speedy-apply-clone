@@ -89,15 +89,15 @@ window.SpeedyDictionary = {
         // Education
         "education.school": {
             regex: /school|university|college|institution|board/i,
-            selectors: ['input[name*="school"]', 'input[name*="university"]', 'input[name*="college"]', '[id*="education"]', 'input[name="education[school_name]"]', 'input[name^="entry."][type="text"]'] // Added Greenhouse, Google Forms
+            selectors: ['input[name*="school"]', 'input[name*="university"]', 'input[name*="college"]', '[id*="education"]', 'input[name="education[school_name]"]', 'input[name^="entry."][type="text"]', '[data-automation-id="educationSection_school"]', '[data-automation-id="school"]'] // Added Greenhouse, Google Forms, Workday
         },
         "education.degree": {
             regex: /degree|qualification|certification/i,
-            selectors: ['input[name*="degree"]', 'select[name*="degree"]', 'input[name="education[degree]"]', 'input[name^="entry."][type="text"]'] // Added Greenhouse, Google Forms
+            selectors: ['input[name*="degree"]', 'select[name*="degree"]', 'input[name="education[degree]"]', 'input[name^="entry."][type="text"]', '[data-automation-id="educationSection_degree"]', '[data-automation-id="degree"]'] // Added Greenhouse, Google Forms, Workday
         },
         "education.field": {
             regex: /major|field\s*of\s*study|specialization/i,
-            selectors: ['input[name*="major"]', 'input[name*="field"]', 'input[name="education[discipline]"]', 'input[name^="entry."][type="text"]'] // Added Greenhouse, Google Forms
+            selectors: ['input[name*="major"]', 'input[name*="field"]', 'input[name="education[discipline]"]', 'input[name^="entry."][type="text"]', '[data-automation-id="educationSection_fieldOfStudy"]', '[data-automation-id="fieldOfStudy"]'] // Added Greenhouse, Google Forms, Workday
         },
         // Work
         "work.company": {
@@ -111,11 +111,14 @@ window.SpeedyDictionary = {
                 'input[name="job_application[employment][][company_name]"]',
                 'input[name="org"]',
                 'input[name="current-company"]',
-                'input[name^="entry."][type="text"]'
+                'input[name^="entry."][type="text"]',
+                '[data-automation-id="jobHistorySection_companyName"]',
+                '[data-automation-id="company"]',
+                '[data-automation-id="companyName"]'
             ] // Greenhouse, Lever, Indeed, Google Forms
         },
         "work.title": {
-            regex: /job\s*title|role|position|designation|enter.*job/i,
+            regex: /job\s*title|position|designation|enter.*job|role(?!.*description|.*responsibilities)/i,
             selectors: [
                 'input[name*="title"]',
                 'input[name*="role"]',
@@ -126,20 +129,23 @@ window.SpeedyDictionary = {
                 'input[placeholder*="job" i][placeholder*="title" i]',
                 'input[aria-label*="job title" i]',
                 'input[name="job_application[employment][][title]"]',
-                'input[name^="entry."][type="text"]'
+                'input[name^="entry."][type="text"]',
+                '[data-automation-id="jobHistorySection_title"]',
+                '[data-automation-id="jobTitle"]',
+                '[data-automation-id="title"]'
             ] // Greenhouse, Indeed, Google Forms
         },
         "work.startDate": {
             regex: /start\s*date|from/i,
-            selectors: ['input[name*="start"]', 'select[name*="start"]', 'input[name*="from"]', 'select[name*="from"]', 'input[name="job_application[employment][][start_date]"]', 'input[name^="entry."][type="date"]', 'input[name^="entry."][type="text"]'] // Added Greenhouse, Google Forms
+            selectors: ['input[name*="start"]', 'select[name*="start"]', 'input[name*="from"]', 'select[name*="from"]', 'input[name="job_application[employment][][start_date]"]', 'input[name^="entry."][type="date"]', 'input[name^="entry."][type="text"]', '[data-automation-id="jobHistorySection_startDate"]', '[data-automation-id="startDate"]'] // Added Greenhouse, Google Forms, Workday
         },
         "work.endDate": {
             regex: /end\s*date|to/i,
-            selectors: ['input[name*="end"]', 'select[name*="end"]', 'input[name*="to"]', 'select[name*="to"]', 'input[name="job_application[employment][][end_date]"]', 'input[name^="entry."][type="date"]', 'input[name^="entry."][type="text"]'] // Added Greenhouse, Google Forms
+            selectors: ['input[name*="end"]', 'select[name*="end"]', 'input[name*="to"]', 'select[name*="to"]', 'input[name="job_application[employment][][end_date]"]', 'input[name^="entry."][type="date"]', 'input[name^="entry."][type="text"]', '[data-automation-id="jobHistorySection_endDate"]', '[data-automation-id="endDate"]'] // Added Greenhouse, Google Forms, Workday
         },
         "work.description": {
-            regex: /description|responsibilities|duties/i,
-            selectors: ['textarea[name*="description"]', 'textarea[name*="responsibilities"]', 'textarea[name="job_application[employment][][notes]"]', 'textarea[name^="entry."]'] // Added Greenhouse, Google Forms
+            regex: /role\s*description|description|responsibilities|duties/i,
+            selectors: ['textarea[name*="description"]', 'textarea[name*="responsibilities"]', 'textarea[name="job_application[employment][][notes]"]', 'textarea[name^="entry."]', 'div[role="textbox"]', 'input[name*="description"]', '[data-automation-id="jobHistorySection_description"]', '[data-automation-id="description"]'] // Added Greenhouse, Google Forms, Rich Text Editors, Workday
         },
         // Legal & Authorization
         "legal.authorized": {
