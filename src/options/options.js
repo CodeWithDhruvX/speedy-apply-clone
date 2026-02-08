@@ -205,7 +205,10 @@ function getFilteredLogs() {
         const siteMatch = log.site.toLowerCase().includes(searchQuery);
         const roleMatch = (log.role || '').toLowerCase().includes(searchQuery);
         const companyMatch = (log.company || '').toLowerCase().includes(searchQuery);
-        return siteMatch || roleMatch || companyMatch;
+        const portalMatch = (log.portal || '').toLowerCase().includes(searchQuery);
+        // Fallback portal check for old records logic (domain) happens in render, but basic search 
+        // on site url covers implied portal name usually.
+        return siteMatch || roleMatch || companyMatch || portalMatch;
     });
 }
 
@@ -228,7 +231,7 @@ function renderTable() {
 
     if (filteredLogs.length === 0) {
         const message = searchQuery ? 'No applications found matching your search.' : 'No applications yet. Start applying!';
-        tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 20px;">${message}</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 20px;">${message}</td></tr>`;
     } else {
         // Get logs for current page (reverse to show newest first)
         const startIndex = (currentPage - 1) * itemsPerPage;
@@ -248,15 +251,17 @@ function renderTable() {
 
             const isChecked = selectedTimestamps.has(String(log.timestamp));
 
-            let companyName = log.company;
-            if (!companyName) {
-                // Fallback for old records: Extract from URL
+            let companyName = log.company || '';
+            let portalName = log.portal;
+
+            // Fallback for Portal Name if missing (old records)
+            if (!portalName) {
                 try {
                     const urlObj = new URL(log.site);
                     let domain = urlObj.hostname.replace(/^www\./, '');
-                    companyName = domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1);
+                    portalName = domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1);
                 } catch (e) {
-                    companyName = 'Unknown';
+                    portalName = 'Unknown';
                 }
             }
 
@@ -266,6 +271,7 @@ function renderTable() {
                            data-timestamp="${log.timestamp}" 
                            ${isChecked ? 'checked' : ''}>
                 </td>
+                <td><span class="portal-badge" style="background: #eef2ff; color: #4338ca; padding: 2px 8px; border-radius: 4px; font-size: 0.85em; font-weight: 500;">${portalName}</span></td>
                 <td><strong>${companyName}</strong></td>
                 <td>
                     <div class="url-cell">
@@ -294,11 +300,12 @@ function renderTable() {
 
         document.querySelectorAll('.copy-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const url = e.currentTarget.dataset.url;
+                const button = e.currentTarget;
+                const url = button.dataset.url;
                 navigator.clipboard.writeText(url).then(() => {
-                    const original = e.currentTarget.textContent;
-                    e.currentTarget.textContent = '✅';
-                    setTimeout(() => e.currentTarget.textContent = original, 1000);
+                    const original = button.textContent;
+                    button.textContent = '✅';
+                    setTimeout(() => button.textContent = original, 1000);
                 });
             });
         });

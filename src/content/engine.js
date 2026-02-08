@@ -405,39 +405,150 @@
 
                 const url = window.location.href;
                 // Try to guess role from title?
-                const role = document.title.split('-')[0].split('|')[0].trim().substring(0, 30);
+                let role = document.title.split('-')[0].split('|')[0].trim().substring(0, 50);
+
+                // Helper: Clean company name
+                const cleanName = (name) => name ? name.trim().replace(/\s+/g, ' ') : '';
+
+                // Helper: Get Domain / Portal Name
+                const getPortalName = () => {
+                    const domain = getDomain();
+                    if (!domain) return 'Unknown';
+                    const name = domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1);
+                    return name;
+                };
+
+                const portal = getPortalName();
+
+                // Known Portals to ignore if found as "Company"
+                const KNOWN_PORTALS = [
+                    'Naukri', 'LinkedIn', 'Indeed', 'Glassdoor', 'Monster',
+                    'Foundit', 'Instahyre', 'Hirist', 'Workday', 'Greenhouse',
+                    'Lever', 'Wellfound', 'AngelList', 'App.join'
+                ];
 
                 // Extract Company Name
                 let company = '';
 
-                // 1. Try Meta Tags
-                const siteNameMeta = document.querySelector('meta[property="og:site_name"]');
-                if (siteNameMeta) {
-                    company = siteNameMeta.content;
+                // 0. Naukri Specific "About company" (Highest Priority)
+                if (url.includes('naukri.com')) {
+                    // Strategy 1: Look for "About company" header and get following siblings
+                    const headers = Array.from(document.querySelectorAll('h6, h2, h3, h4, div'));
+                    const aboutHeader = headers.find(h => h.innerText && h.innerText.toLowerCase().includes('about company'));
+
+                    if (aboutHeader) {
+                        // In Naukri, the company name is often in a div/p immediately following
+                        // We must skip scripts/styles and ensure we don't grab JSON
+                        let next = aboutHeader.nextElementSibling;
+                        let attempts = 0;
+                        while (next && attempts < 3) {
+                            if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'LINK', 'META'].includes(next.tagName)) {
+                                next = next.nextElementSibling;
+                                attempts++;
+                                continue;
+                            }
+
+                            // Check contents
+                            if (next.innerText) {
+                                const detail = next.querySelector('.detail');
+                                let textVal = '';
+                                if (detail) {
+                                    textVal = cleanName(detail.innerText);
+                                } else {
+                                    textVal = cleanName(next.innerText);
+                                }
+
+                                // Validation: Don't accept JSON or very long text
+                                if (textVal && !textVal.startsWith('{') && !textVal.startsWith('[') && textVal.length < 100) {
+                                    if (textVal.length > 50) company = textVal.split('.')[0];
+                                    else company = textVal;
+                                    break; // Found it
+                                }
+                            }
+                            next = next.nextElementSibling;
+                            attempts++;
+                        }
+                    }
+
+                    if (!company) {
+                        const naukriSel = document.querySelector('.job-desc-company-info .company-name, .salary-delivery .company-name, a.level-1');
+                        if (naukriSel) company = cleanName(naukriSel.innerText);
+                    }
                 }
 
-                // 2. Try JSON-LD (JobPosting)
+                // 1. JSON-LD (High Priority)
                 if (!company) {
                     const scripts = document.querySelectorAll('script[type="application/ld+json"]');
                     for (const script of scripts) {
                         try {
                             const data = JSON.parse(script.innerText);
-                            if (data['@type'] === 'JobPosting' && data.hiringOrganization && data.hiringOrganization.name) {
-                                company = data.hiringOrganization.name;
-                                break;
+                            const items = Array.isArray(data) ? data : [data];
+
+                            for (const item of items) {
+                                if (item['@type'] === 'JobPosting' && item.hiringOrganization && item.hiringOrganization.name) {
+                                    const extracted = cleanName(item.hiringOrganization.name);
+                                    if (extracted && extracted.toLowerCase() !== 'confidential') {
+                                        if (!extracted.toLowerCase().includes(portal.toLowerCase())) {
+                                            company = extracted;
+                                            break;
+                                        }
+                                    }
+                                }
                             }
-                        } catch (e) {
-                            // ignore json parse error
+                            if (company) break;
+                        } catch (e) { /* ignore */ }
+                    }
+                }
+
+                // 2. Platform-Specific Selectors
+                if (!company) {
+                    const selectors = [
+                        '.job-desc-company-info .company-name',
+                        '.salary-delivery .company-name',
+                        '.job-details-jobs-unified-top-card__company-name',
+                        '.jobs-unified-top-card__company-name',
+                        '[data-company-name="true"]',
+                        '.jobsearch-CompanyAvatar-companyLink',
+                        '[data-test="employer-name"]',
+                        '[data-test-id="company-name"]',
+                        '.company-name'
+                    ];
+
+                    for (const sel of selectors) {
+                        const el = document.querySelector(sel);
+                        if (el) {
+                            company = cleanName(el.innerText);
+                            if (company) break;
                         }
                     }
                 }
 
-                // 3. Fallback: Domain Name
+                // 3. Title Parsing
                 if (!company) {
-                    const domain = getDomain(); // Helper available in scope
-                    if (domain) {
-                        company = domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1);
+                    const title = document.title;
+                    const atMatch = title.match(/\s+at\s+([^|\-]+)/i);
+                    const pipeMatch = title.match(/\s+\|\s+([^|\-]+)/);
+                    const hyphenMatch = title.match(/\s+-\s+([^|\-]+)/);
+
+                    if (atMatch && atMatch[1]) company = cleanName(atMatch[1]);
+                    else if (pipeMatch && pipeMatch[1]) company = cleanName(pipeMatch[1]);
+                    else if (hyphenMatch && hyphenMatch[1]) company = cleanName(hyphenMatch[1]);
+                }
+
+                // 4. Fallback: Meta Tags
+                if (!company) {
+                    const siteNameMeta = document.querySelector('meta[property="og:site_name"]');
+                    if (siteNameMeta) {
+                        const val = cleanName(siteNameMeta.content);
+                        if (!KNOWN_PORTALS.some(p => val.toLowerCase().includes(p.toLowerCase()))) {
+                            company = val;
+                        }
                     }
+                }
+
+                // Final Cleanup
+                if (company && KNOWN_PORTALS.some(p => company.toLowerCase().includes(p.toLowerCase()))) {
+                    company = '';
                 }
 
 
@@ -451,12 +562,13 @@
                     logs.push({
                         site: url,
                         role: role,
-                        company: company || 'Unknown',
+                        company: company || '',
+                        portal: portal,
                         timestamp: Date.now()
                     });
                     await chrome.storage.local.set({ applicationLog: logs });
                     this.hasLogged = true;
-                    console.log(`SpeedyApply: Logged application to Dashboard for ${company}`);
+                    console.log(`SpeedyApply: Logged application. Portal: ${portal}, Company: ${company}`);
                 }
             } catch (error) {
                 // Ignore context invalidated errors here too
