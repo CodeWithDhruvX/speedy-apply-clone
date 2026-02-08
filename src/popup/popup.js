@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Load page-specific setting
                 chrome.storage.local.get(['pageSpecificSettings'], (result) => {
                     const pageSettings = result.pageSpecificSettings || {};
-                    const isEnabled = pageSettings[currentDomain] !== false; // Default true
+                    const isEnabled = pageSettings[currentDomain] === true; // Default false
                     pageSpecificToggle.checked = isEnabled;
                 });
 
@@ -314,6 +314,61 @@ document.addEventListener('DOMContentLoaded', async () => {
                 btn.textContent = '📋';
                 btn.type = 'button'; // Prevent form submission
                 label.appendChild(btn);
+            }
+        });
+    }
+
+    // 5. Pin/Unpin Logic
+    const pinBtn = document.getElementById('pinBtn');
+    const unpinBtn = document.getElementById('unpinBtn');
+
+    // Check if we are in "pinned" mode
+    const urlParams = new URLSearchParams(window.location.search);
+    const isPinned = urlParams.get('pinned') === 'true';
+
+    if (isPinned) {
+        if (pinBtn) pinBtn.style.display = 'none';
+        if (unpinBtn) unpinBtn.style.display = 'flex';
+        document.body.classList.add('pinned-mode'); // Optional: for specific styling
+    } else {
+        if (pinBtn) pinBtn.style.display = 'flex';
+        if (unpinBtn) unpinBtn.style.display = 'none';
+    }
+
+    if (pinBtn) {
+        pinBtn.addEventListener('click', async () => {
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (tab) {
+                chrome.tabs.sendMessage(tab.id, { action: "toggle_pin_popup" }, () => {
+                    // Check for lastError to avoid "message port closed" errors if content script is missing
+                    if (chrome.runtime.lastError) {
+                        console.error('Error sending message:', chrome.runtime.lastError);
+                    }
+                    window.close(); // Close the extension popup
+                });
+
+                // Fallback: If callback never fires (e.g. content script not ready), close anyway after timeout
+                setTimeout(() => window.close(), 500);
+            }
+        });
+    }
+
+    if (unpinBtn) {
+        unpinBtn.addEventListener('click', async () => {
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+            // If running in iframe, currentWindow might be the extension window/iframe context?
+            // Actually chrome.tabs.query({active:true}) from an extension page usually returns the active tab of the main window.
+
+            if (tab) {
+                chrome.tabs.sendMessage(tab.id, { action: "toggle_pin_popup" }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        // This happens if the content script isn't listening (unlikely if we are pinned)
+                        console.error("SpeedyApply: Unpin failed", chrome.runtime.lastError);
+                    }
+                });
+            } else {
+                console.error("SpeedyApply: Could not find active tab to unpin");
             }
         });
     }

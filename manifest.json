@@ -28,5 +28,17 @@
             ],
             "run_at": "document_idle"
         }
+    ],
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "src/popup/index.html",
+                "src/popup/style.css",
+                "src/popup/popup.js"
+            ],
+            "matches": [
+                "<all_urls>"
+            ]
+        }
     ]
 }

@@ -129,7 +129,7 @@
                     // Get current page-specific state
                     const currentStorage = await chrome.storage.local.get('pageSpecificSettings');
                     const currentPageSettings = currentStorage.pageSpecificSettings || {};
-                    const currentState = currentPageSettings[currentDomain] !== false; // Default true
+                    const currentState = currentPageSettings[currentDomain] === true; // Default false
                     const newState = !currentState;
 
                     // Update page-specific settings
@@ -171,7 +171,7 @@
                 e.stopPropagation();
                 // Get current state
                 const storage = await chrome.storage.local.get('isAutoFillEnabled');
-                const currentState = storage.isAutoFillEnabled !== false; // Default true
+                const currentState = storage.isAutoFillEnabled === true; // Default false
                 const newState = !currentState;
 
                 // Save
@@ -225,9 +225,9 @@
             document.body.appendChild(container);
 
             // Initialize Toggle States
-            this.updateToggleUI(initialStorage.isAutoFillEnabled !== false);
+            this.updateToggleUI(initialStorage.isAutoFillEnabled === true);
             if (currentDomain) {
-                this.updatePageToggleUI(pageSettings[currentDomain] !== false);
+                this.updatePageToggleUI(pageSettings[currentDomain] === true);
             }
         },
 
@@ -280,7 +280,7 @@
                 let currentProfileData = null;
 
                 // Check if auto-fill is enabled globally
-                if (!force && storage.isAutoFillEnabled === false) {
+                if (!force && storage.isAutoFillEnabled !== true) {
                     console.log("SpeedyApply: Auto-fill disabled globally.");
                     return;
                 }
@@ -290,7 +290,7 @@
                     const currentDomain = getDomain();
                     if (currentDomain) {
                         const pageSettings = storage.pageSpecificSettings || {};
-                        const pageEnabled = pageSettings[currentDomain] !== false; // Default true
+                        const pageEnabled = pageSettings[currentDomain] === true; // Default false
                         if (!pageEnabled) {
                             console.log(`SpeedyApply: Auto-fill disabled for ${currentDomain}.`);
                             return;
@@ -510,10 +510,56 @@
                 }
             }
 
-            // 2. Workday - Check constraints
             if (url.includes('myworkdayjobs.com')) {
                 // Workday often requires triggering specific events on the *react* handler.
                 // Our injector already does standard event dispatch.
+            }
+        },
+
+        togglePinnedPopup: function (tabId) {
+            const existing = document.getElementById('speedy-apply-pinned-popup');
+            if (existing) {
+                existing.remove();
+                console.log("SpeedyApply: Pinned popup removed");
+            } else {
+                // Create Container
+                const container = document.createElement('div');
+                container.id = 'speedy-apply-pinned-popup';
+                Object.assign(container.style, {
+                    position: 'fixed',
+                    top: '20px',
+                    right: '20px',
+                    width: '400px', // Matches body width (360) + padding (32) + slack
+                    height: '560px', // Matches body height (520) + padding (32) + slack
+                    zIndex: '2147483647', // Max z-index
+                    border: '1px solid #334155',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+                    backgroundColor: '#0f172a',
+                    overflow: 'hidden'
+                });
+
+                // Create Header (Drag handle? Close button?)
+                // Actually the popup itself has a Close button now when pinned.
+                // But a small drag handle might be nice later. For now, just the iframe.
+
+                const iframe = document.createElement('iframe');
+                let src = chrome.runtime.getURL('src/popup/index.html?pinned=true');
+                if (tabId) {
+                    src += `&tabId=${tabId}`;
+                }
+                iframe.src = src;
+
+                Object.assign(iframe.style, {
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                    display: 'block'
+                });
+
+                container.appendChild(iframe);
+                document.body.appendChild(container);
+                console.log("SpeedyApply: Pinned popup injected");
             }
         }
     };
@@ -523,6 +569,9 @@
         if (request.action === "fill") {
             console.log("SpeedyApply: Manual fill triggered");
             Engine.scanAndFill(true); // Force fill
+            sendResponse({ status: "done" });
+        } else if (request.action === "toggle_pin_popup") {
+            Engine.togglePinnedPopup(request.tabId);
             sendResponse({ status: "done" });
         }
     });

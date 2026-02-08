@@ -21,6 +21,8 @@
                 <select id="profileSelector" class="profile-select">
                     <!-- Options injected by JS -->
                 </select>
+                <button id="pinBtn" class="icon-btn" title="Pin Popup">📌</button>
+                <button id="unpinBtn" class="icon-btn" style="display: none;" title="Unpin/Close">❌</button>
             </div>
 
             <!-- Page-Specific Controls -->
@@ -324,6 +326,23 @@
 
         .slider.round:before {
             border-radius: 50%;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
         }
     </style>
 </body>
