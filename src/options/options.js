@@ -204,7 +204,8 @@ function getFilteredLogs() {
     return allLogs.filter(log => {
         const siteMatch = log.site.toLowerCase().includes(searchQuery);
         const roleMatch = (log.role || '').toLowerCase().includes(searchQuery);
-        return siteMatch || roleMatch;
+        const companyMatch = (log.company || '').toLowerCase().includes(searchQuery);
+        return siteMatch || roleMatch || companyMatch;
     });
 }
 
@@ -227,7 +228,7 @@ function renderTable() {
 
     if (filteredLogs.length === 0) {
         const message = searchQuery ? 'No applications found matching your search.' : 'No applications yet. Start applying!';
-        tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px;">${message}</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 20px;">${message}</td></tr>`;
     } else {
         // Get logs for current page (reverse to show newest first)
         const startIndex = (currentPage - 1) * itemsPerPage;
@@ -247,12 +248,25 @@ function renderTable() {
 
             const isChecked = selectedTimestamps.has(String(log.timestamp));
 
+            let companyName = log.company;
+            if (!companyName) {
+                // Fallback for old records: Extract from URL
+                try {
+                    const urlObj = new URL(log.site);
+                    let domain = urlObj.hostname.replace(/^www\./, '');
+                    companyName = domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1);
+                } catch (e) {
+                    companyName = 'Unknown';
+                }
+            }
+
             row.innerHTML = `
                 <td>
                     <input type="checkbox" class="row-checkbox record-checkbox" 
                            data-timestamp="${log.timestamp}" 
                            ${isChecked ? 'checked' : ''}>
                 </td>
+                <td><strong>${companyName}</strong></td>
                 <td>
                     <div class="url-cell">
                         <span title="${log.site}">${displayUrl}</span>

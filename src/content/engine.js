@@ -44,6 +44,9 @@
             // Inject Floating Action Button
             this.createFloatingButton();
 
+            // Setup Interaction Tracking (Manual Clicks)
+            this.setupInteractionTracking();
+
             // Observer for dynamic content (Single Page Apps)
             const observer = new MutationObserver((mutations) => {
                 // Debounce simple scan
@@ -68,6 +71,26 @@
                     }
                 }
             });
+        },
+
+        setupInteractionTracking: function () {
+            document.body.addEventListener('click', (e) => {
+                // Find closest button or link if user clicked on icon/span inside
+                const target = e.target.closest('button, input[type="submit"], a, [role="button"]');
+
+                if (!target) return;
+
+                const text = (target.innerText || target.value || target.getAttribute('aria-label') || '').toLowerCase();
+                const trackingKeywords = ['apply', 'submit', 'send application', 'save & continue', 'next', 'review'];
+
+                // Check if text matches any keyword
+                const isSubmitButton = trackingKeywords.some(keyword => text.includes(keyword));
+
+                if (isSubmitButton) {
+                    console.log(`SpeedyApply: Detected manual click on "${text}" - logging application.`);
+                    this.logApplication();
+                }
+            }, true); // Use capture to ensure we catch it before some frameworks might stop propagation
         },
 
         createFloatingButton: async function () {
@@ -384,6 +407,40 @@
                 // Try to guess role from title?
                 const role = document.title.split('-')[0].split('|')[0].trim().substring(0, 30);
 
+                // Extract Company Name
+                let company = '';
+
+                // 1. Try Meta Tags
+                const siteNameMeta = document.querySelector('meta[property="og:site_name"]');
+                if (siteNameMeta) {
+                    company = siteNameMeta.content;
+                }
+
+                // 2. Try JSON-LD (JobPosting)
+                if (!company) {
+                    const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+                    for (const script of scripts) {
+                        try {
+                            const data = JSON.parse(script.innerText);
+                            if (data['@type'] === 'JobPosting' && data.hiringOrganization && data.hiringOrganization.name) {
+                                company = data.hiringOrganization.name;
+                                break;
+                            }
+                        } catch (e) {
+                            // ignore json parse error
+                        }
+                    }
+                }
+
+                // 3. Fallback: Domain Name
+                if (!company) {
+                    const domain = getDomain(); // Helper available in scope
+                    if (domain) {
+                        company = domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1);
+                    }
+                }
+
+
                 const storage = await chrome.storage.local.get('applicationLog');
                 let logs = storage.applicationLog || [];
 
@@ -394,11 +451,12 @@
                     logs.push({
                         site: url,
                         role: role,
+                        company: company || 'Unknown',
                         timestamp: Date.now()
                     });
                     await chrome.storage.local.set({ applicationLog: logs });
                     this.hasLogged = true;
-                    console.log("SpeedyApply: Logged application to Dashboard");
+                    console.log(`SpeedyApply: Logged application to Dashboard for ${company}`);
                 }
             } catch (error) {
                 // Ignore context invalidated errors here too
