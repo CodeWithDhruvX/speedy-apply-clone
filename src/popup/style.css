@@ -312,3 +312,54 @@ textarea {
     min-height: 1.2em;
     color: var(--success);
 }
+
+/* Global Search Styles */
+.search-container {
+    margin: 10px 0;
+    text-align: center;
+}
+
+#globalSearch {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+#globalSearch:focus {
+    outline: none;
+    border-color: var(--accent);
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Search Mode State */
+body.search-mode .tabs {
+    display: none !important;
+}
+
+body.search-mode .tab-content {
+    display: block !important;
+    padding: 0 !important;
+    border: none !important;
+    animation: none !important;
+}
+
+body.search-mode .form-group {
+    display: none;
+    /* Default hidden in search mode, JS will show matches */
+    padding: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+body.search-mode .form-group.match {
+    display: flex !important;
+}
+
+body.search-mode .tab-content h3 {
+    display: none;
+    /* Hide section headers in search mode to reduce clutter */
+}

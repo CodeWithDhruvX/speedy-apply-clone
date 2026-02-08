@@ -375,4 +375,35 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
+
+
+    // 6. Global Search Logic
+    const globalSearchInput = document.getElementById('globalSearch');
+    if (globalSearchInput) {
+        globalSearchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            const formGroups = document.querySelectorAll('.form-group');
+
+            if (query.length > 0) {
+                document.body.classList.add('search-mode');
+
+                formGroups.forEach(group => {
+                    const label = group.querySelector('label')?.textContent.toLowerCase() || '';
+                    const input = group.querySelector('input, textarea, select');
+                    const value = input?.value.toLowerCase() || '';
+
+                    if (label.includes(query) || value.includes(query)) {
+                        group.classList.add('match');
+                    } else {
+                        group.classList.remove('match');
+                    }
+                });
+            } else {
+                document.body.classList.remove('search-mode');
+                formGroups.forEach(group => group.classList.remove('match'));
+
+                // Restore tabs: find active tab and ensure it's visible (though search-mode removal handles this via CSS)
+            }
+        });
+    }
 });
