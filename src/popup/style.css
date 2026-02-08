@@ -187,6 +187,12 @@ body.pinned-mode .tab-content.active {
     gap: 12px;
 }
 
+/* History tabs need full width for their internal grid */
+body.pinned-mode #education-history.active,
+body.pinned-mode #work-history.active {
+    display: block;
+}
+
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -362,4 +368,52 @@ body.search-mode .form-group.match {
 body.search-mode .tab-content h3 {
     display: none;
     /* Hide section headers in search mode to reduce clutter */
+}
+
+/* History Items */
+.history-item {
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 12px;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: 1fr;
+    /* Default to 1 column */
+}
+
+/* Make history item inputs look slightly different */
+.history-item input[readonly],
+.history-item textarea[readonly] {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-color: transparent;
+    cursor: default;
+}
+
+.history-item input[readonly]:focus,
+.history-item textarea[readonly]:focus {
+    border-color: var(--accent);
+    background-color: var(--input-bg);
+}
+
+/* Pinned Mode Responsive Grid */
+body.pinned-mode .history-item {
+    /* Use auto-fit to be responsive like other tabs. 
+       minmax(140px, 1fr) allows ~4 columns on 600px+ width, but wraps on smaller screens. 
+    */
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+/* Full width elements span all columns */
+body.pinned-mode .history-item .full-width,
+body.pinned-mode .history-item textarea {
+    grid-column: 1 / -1;
+}
+
+/* Adjust nested form-groups to fill their grid cell */
+.history-item .form-group {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
 }

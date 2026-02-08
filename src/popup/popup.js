@@ -258,7 +258,80 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Handle work array if it exists (fallback to first item for simple inputs)
         // The popup currently uses simple inputs for work. 
         // If user used Options page to satisfy work array, we might want to map 1st item -> popup inputs?
-        // For now, let's keep popup simple. 
+        // For now, let's keep popup simple.
+
+        // --- NEW: Handle History Tabs ---
+        renderHistoryTabs(profile);
+    }
+
+    function renderHistoryTabs(profile) {
+        const eduTab = document.getElementById('tab-education');
+        const workTab = document.getElementById('tab-work-history');
+        const eduList = document.getElementById('education-list');
+        const workList = document.getElementById('work-history-list');
+
+        // Education
+        if (profile.education && Array.isArray(profile.education) && profile.education.length > 0) {
+            eduTab.style.display = 'block';
+            eduList.innerHTML = profile.education.map(edu => `
+                <div class="history-item">
+                    <div class="form-group">
+                        <label>School / University</label>
+                        <input type="text" readonly value="${edu.school || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Degree</label>
+                        <input type="text" readonly value="${edu.degree || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Field of Study</label>
+                        <input type="text" readonly value="${edu.field || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Dates</label>
+                        <input type="text" readonly value="${edu.startDate || ''} - ${edu.endDate || ''}">
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            eduTab.style.display = 'none';
+            eduList.innerHTML = '<div class="status">No education history found.</div>';
+        }
+
+        // Work History
+        if (profile.work && Array.isArray(profile.work) && profile.work.length > 0) {
+            workTab.style.display = 'block';
+            workList.innerHTML = profile.work.map(job => `
+                <div class="history-item">
+                    <div class="form-group">
+                        <label>Company</label>
+                        <input type="text" readonly value="${job.company || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Job Title</label>
+                        <input type="text" readonly value="${job.title || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Location</label>
+                        <input type="text" readonly value="${job.location || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Dates</label>
+                        <input type="text" readonly value="${job.startDate || ''} - ${job.endDate || ''}">
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Description</label>
+                        <textarea readonly rows="3">${job.description || ''}</textarea>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            workTab.style.display = 'none';
+            workList.innerHTML = '<div class="status">No work history found.</div>';
+        }
+
+        // Re-inject copy buttons for these new fields
+        setTimeout(injectCopyButtons, 0);
     }
 
     function showStatus(msg, type) {
@@ -398,9 +471,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                         group.classList.remove('match');
                     }
                 });
+
+                // Search History Items
+                const historyItems = document.querySelectorAll('.history-item');
+                historyItems.forEach(item => {
+                    const text = item.textContent.toLowerCase();
+                    if (text.includes(query)) {
+                        item.style.display = 'flex';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
             } else {
                 document.body.classList.remove('search-mode');
                 formGroups.forEach(group => group.classList.remove('match'));
+
+                // Restore History Items
+                document.querySelectorAll('.history-item').forEach(item => item.style.display = 'flex');
 
                 // Restore tabs: find active tab and ensure it's visible (though search-mode removal handles this via CSS)
             }

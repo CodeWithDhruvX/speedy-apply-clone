@@ -51,6 +51,10 @@
                 <button type="button" class="tab-btn" data-tab="work">Work</button>
                 <button type="button" class="tab-btn" data-tab="profile">Profile</button>
                 <button type="button" class="tab-btn" data-tab="legal">Legal</button>
+                <button type="button" class="tab-btn" id="tab-education" data-tab="education-history"
+                    style="display: none;">Education</button>
+                <button type="button" class="tab-btn" id="tab-work-history" data-tab="work-history"
+                    style="display: none;">Work History</button>
             </div>
 
             <div class="tab-content active" id="personal">
@@ -249,6 +253,16 @@
                         <option value="Decline">Decline to Self-Identify</option>
                     </select>
                 </div>
+            </div>
+
+            <div class="tab-content" id="education-history">
+                <h3>Education History</h3>
+                <div id="education-list"></div>
+            </div>
+
+            <div class="tab-content" id="work-history">
+                <h3>Work History</h3>
+                <div id="work-history-list"></div>
             </div>
 
             <div class="actions">
