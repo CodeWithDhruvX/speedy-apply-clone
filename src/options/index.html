@@ -7,6 +7,7 @@
     <title>SpeedyApply Dashboard</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="jszip.min.js"></script>
 </head>
 
 <body>
@@ -15,8 +16,6 @@
         <nav>
             <a href="#" id="nav-dashboard" class="active">Dashboard</a>
             <a href="#" id="nav-profile">Profile</a>
-            <a href="#">Applications</a>
-            <a href="#">Settings</a>
         </nav>
     </div>
 
@@ -71,9 +70,19 @@
                             placeholder="Search by company, role, or URL...">
                     </div>
                 </div>
+                <div id="bulkActions" class="bulk-actions" style="display: none;">
+                    <span id="selectionCount" class="selection-count">0 selected</span>
+                    <div class="bulk-action-buttons">
+                        <button id="openAllBtn" class="secondary-btn bulk-btn">📂 Open All in Tabs</button>
+                        <button id="deleteSelectedBtn" class="danger-btn bulk-btn">🗑️ Delete Selected</button>
+                    </div>
+                </div>
                 <table>
                     <thead>
                         <tr>
+                            <th style="width: 40px;">
+                                <input type="checkbox" id="selectAll" class="row-checkbox" title="Select All">
+                            </th>
                             <th>Company/Site</th>
                             <th>Role</th>
                             <th>Status</th>
@@ -117,7 +126,10 @@
                         Export</button>
                     <button id="importProfileBtn" class="secondary-btn" title="Import Profile from JSON">⬆️
                         Import</button>
+                    <button id="importResumeBtn" class="secondary-btn" title="Import Profile from Resume">📄
+                        Import from Resume</button>
                     <input type="file" id="importFileInput" accept=".json" style="display: none;">
+                    <input type="file" id="importResumeInput" accept=".zip,.tex" multiple style="display: none;">
                     <button id="saveProfileBtn" class="primary-btn" style="margin-left: 10px;">Save Profile</button>
                 </div>
             </header>
@@ -338,6 +350,7 @@
         </div>
     </main>
 
+    <script src="resume-parser.js"></script>
     <script src="options.js"></script>
 </body>
 

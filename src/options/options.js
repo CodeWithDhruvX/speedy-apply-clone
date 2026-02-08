@@ -39,6 +39,7 @@ let currentPage = 1;
 let itemsPerPage = 10;
 let searchQuery = '';
 let allLogs = [];
+let selectedTimestamps = new Set(); // Track selected record timestamps
 
 async function initDashboard() {
     // Set Date
@@ -128,6 +129,65 @@ async function initDashboard() {
         });
     }
 
+    // Setup select all checkbox
+    const selectAllCheckbox = document.getElementById('selectAll');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', (e) => {
+            const visibleCheckboxes = document.querySelectorAll('.record-checkbox');
+            visibleCheckboxes.forEach(checkbox => {
+                checkbox.checked = e.currentTarget.checked;
+                const timestamp = checkbox.dataset.timestamp;
+                if (e.currentTarget.checked) {
+                    selectedTimestamps.add(timestamp);
+                } else {
+                    selectedTimestamps.delete(timestamp);
+                }
+            });
+            updateBulkActions();
+        });
+    }
+
+    // Setup bulk action buttons
+    const openAllBtn = document.getElementById('openAllBtn');
+    if (openAllBtn) {
+        openAllBtn.addEventListener('click', () => {
+            const selectedLogs = allLogs.filter(log => selectedTimestamps.has(String(log.timestamp)));
+            selectedLogs.forEach(log => {
+                chrome.tabs.create({ url: log.site });
+            });
+        });
+    }
+
+    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+    if (deleteSelectedBtn) {
+        deleteSelectedBtn.addEventListener('click', async () => {
+            if (selectedTimestamps.size === 0) return;
+
+            const confirmMsg = `Are you sure you want to delete ${selectedTimestamps.size} selected record(s)?`;
+            if (confirm(confirmMsg)) {
+                const data = await chrome.storage.local.get(['applicationLog']);
+                const currentLogs = data.applicationLog || [];
+                const newLogs = currentLogs.filter(log => !selectedTimestamps.has(String(log.timestamp)));
+                await chrome.storage.local.set({ applicationLog: newLogs });
+
+                // Clear selection and update state
+                selectedTimestamps.clear();
+                allLogs = newLogs;
+                renderTable();
+                updateBulkActions();
+
+                // Update stats
+                const totalCountElem = document.getElementById('totalCount');
+                if (totalCountElem) totalCountElem.textContent = newLogs.length;
+
+                const today = new Date().toDateString();
+                const todayLogs = newLogs.filter(log => new Date(log.timestamp).toDateString() === today);
+                const todayCountElem = document.getElementById('todayCount');
+                if (todayCountElem) todayCountElem.textContent = todayLogs.length;
+            }
+        });
+    }
+
     // Render Table
     renderTable();
     // Render Chart (Default: Weekly)
@@ -182,7 +242,14 @@ function renderTable() {
                 if (displayUrl.length > 40) displayUrl = displayUrl.substring(0, 40) + '...';
             }
 
+            const isChecked = selectedTimestamps.has(String(log.timestamp));
+
             row.innerHTML = `
+                <td>
+                    <input type="checkbox" class="row-checkbox record-checkbox" 
+                           data-timestamp="${log.timestamp}" 
+                           ${isChecked ? 'checked' : ''}>
+                </td>
                 <td>
                     <div class="url-cell">
                         <span title="${log.site}">${displayUrl}</span>
@@ -241,11 +308,55 @@ function renderTable() {
                 }
             });
         });
+
+        // Add checkbox listeners
+        document.querySelectorAll('.record-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                const timestamp = e.currentTarget.dataset.timestamp;
+                if (e.currentTarget.checked) {
+                    selectedTimestamps.add(timestamp);
+                } else {
+                    selectedTimestamps.delete(timestamp);
+                }
+                updateBulkActions();
+                updateSelectAllCheckbox();
+            });
+        });
     }
 
+    // Update select all checkbox state
+    updateSelectAllCheckbox();
     // Update pagination controls
-    updatePaginationControls(filteredLogs.length, totalPages)
+    updatePaginationControls(filteredLogs.length, totalPages);
 }
+
+function updateSelectAllCheckbox() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const visibleCheckboxes = document.querySelectorAll('.record-checkbox');
+
+    if (!selectAllCheckbox || visibleCheckboxes.length === 0) return;
+
+    const allChecked = Array.from(visibleCheckboxes).every(cb => cb.checked);
+    const someChecked = Array.from(visibleCheckboxes).some(cb => cb.checked);
+
+    selectAllCheckbox.checked = allChecked;
+    selectAllCheckbox.indeterminate = someChecked && !allChecked;
+}
+
+function updateBulkActions() {
+    const bulkActionsDiv = document.getElementById('bulkActions');
+    const selectionCountSpan = document.getElementById('selectionCount');
+    const count = selectedTimestamps.size;
+
+    if (bulkActionsDiv) {
+        bulkActionsDiv.style.display = count > 0 ? 'flex' : 'none';
+    }
+
+    if (selectionCountSpan) {
+        selectionCountSpan.textContent = `${count} selected`;
+    }
+}
+
 
 function updatePaginationControls(totalItems, totalPages) {
     const prevBtn = document.getElementById('prevPageBtn');
@@ -394,6 +505,10 @@ function initProfile() {
     document.getElementById('exportProfileBtn').addEventListener('click', exportProfile);
     document.getElementById('importProfileBtn').addEventListener('click', importProfile);
     document.getElementById('importFileInput').addEventListener('change', handleFileImport);
+
+    // Resume Import
+    document.getElementById('importResumeBtn').addEventListener('click', importResume);
+    document.getElementById('importResumeInput').addEventListener('change', handleResumeImport);
 
     selector.addEventListener('change', (e) => switchProfile(e.target.value));
 
@@ -715,11 +830,11 @@ function addEducationItem(data = {}) {
             </div>
             <div class="form-group">
                 <label>Start Date</label>
-                <input type="month" class="form-input edu-start" value="${data.startDate || ''}">
+                <input type="text" class="form-input edu-start" value="${data.startDate || ''}" placeholder="YYYY-MM">
             </div>
             <div class="form-group">
                 <label>End Date</label>
-                <input type="month" class="form-input edu-end" value="${data.endDate || ''}">
+                <input type="text" class="form-input edu-end" value="${data.endDate || ''}" placeholder="YYYY-MM or Present">
             </div>
         </div>
     `;
@@ -748,11 +863,11 @@ function addWorkItem(data = {}) {
             </div>
             <div class="form-group">
                 <label>Start Date</label>
-                <input type="month" class="form-input work-start" value="${data.startDate || ''}">
+                <input type="text" class="form-input work-start" value="${data.startDate || ''}" placeholder="YYYY-MM">
             </div>
             <div class="form-group">
                 <label>End Date</label>
-                <input type="month" class="form-input work-end" value="${data.endDate || ''}">
+                <input type="text" class="form-input work-end" value="${data.endDate || ''}" placeholder="YYYY-MM or Present">
             </div>
             <div class="form-group full-width">
                 <label>Description (Role Responsibilities)</label>
@@ -867,3 +982,142 @@ function handleFileImport(event) {
     };
     reader.readAsText(file);
 }
+
+// --- Resume Import Logic ---
+
+function importResume() {
+    const input = document.getElementById('importResumeInput');
+    if (input) input.click();
+}
+
+async function handleResumeImport(event) {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    try {
+        // Show loading feedback
+        const btn = document.getElementById('importResumeBtn');
+        const originalText = btn.textContent;
+        btn.textContent = 'Parsing...';
+        btn.disabled = true;
+
+        // Use ResumeParser to parse the files
+        const parser = new ResumeParser();
+        const parsedData = await parser.parseFiles(files);
+
+        if (!parsedData) {
+            throw new Error('Failed to parse resume data');
+        }
+
+        // Map parsed data to profile format
+        const profileData = mapResumeToProfile(parsedData);
+
+        // Create new profile from parsed data
+        const newProfile = {
+            id: 'profile-' + Date.now(),
+            name: `Imported: ${parsedData._resumeName || 'Resume'}`,
+            data: profileData
+        };
+
+        profiles.push(newProfile);
+        activeProfileId = newProfile.id;
+
+        await chrome.storage.local.set({ profiles, activeProfileId });
+
+        renderProfileSelector();
+        renderProfileForm();
+
+        // Success feedback
+        btn.textContent = 'Imported!';
+        btn.style.backgroundColor = '#22c55e';
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.style.backgroundColor = '';
+            btn.disabled = false;
+        }, 2000);
+
+        alert(`Resume imported successfully!\n\nExtracted:\n- Name: ${parsedData.firstName} ${parsedData.lastName}\n- Email: ${parsedData.email}\n- Phone: ${parsedData.phone}\n- ${parsedData.education.length} education entries\n- ${parsedData.workHistory.length} work entries\n\nReview and edit as needed.`);
+
+    } catch (error) {
+        console.error('Resume import error:', error);
+        alert(`Error importing resume: ${error.message}\n\nPlease ensure you uploaded a valid LaTeX resume file (.tex) or ZIP archive.`);
+
+        // Reset button
+        const btn = document.getElementById('importResumeBtn');
+        if (btn) {
+            btn.textContent = '📄 Import from Resume';
+            btn.disabled = false;
+            btn.style.backgroundColor = '';
+        }
+    }
+
+    // Reset input
+    event.target.value = '';
+}
+
+/**
+ * Map parsed resume data to profile structure
+ * @param {Object} resumeData - Parsed resume data
+ * @returns {Object} Profile data structure
+ */
+function mapResumeToProfile(resumeData) {
+    return {
+        personal: {
+            firstName: resumeData.firstName || '',
+            lastName: resumeData.lastName || '',
+            email: resumeData.email || '',
+            phone: resumeData.phone || '',
+            location: resumeData.location || '',
+            street: resumeData.street || '',
+            city: resumeData.city || '',
+            state: resumeData.state || '',
+            zip: resumeData.zip || '',
+            country: resumeData.country || ''
+        },
+        links: {
+            linkedin: resumeData.linkedin || '',
+            github: resumeData.github || '',
+            portfolio: resumeData.portfolio || '',
+            twitter: resumeData.twitter || ''
+        },
+        legal: {
+            authorized: '',
+            sponsorship: ''
+        },
+        eeoc: {
+            gender: '',
+            race: '',
+            veteran: '',
+            disability: ''
+        },
+        preferences: {
+            noticePeriod: resumeData.noticePeriod || '',
+            currentCtc: resumeData.currentCtc || '',
+            expectedCtc: resumeData.expectedCtc || '',
+            experience: resumeData.experience || ''
+        },
+        profile: {
+            skills: resumeData.skills || '',
+            reasonForChange: '',
+            summary: resumeData.summary || ''
+        },
+        documents: {
+            coverLetter: ''
+        },
+        education: resumeData.education.map(edu => ({
+            school: edu.institution || '',
+            degree: edu.degree || '',
+            field: '',
+            startDate: edu.startDate || '',
+            endDate: edu.endDate || ''
+        })),
+        work: resumeData.workHistory.map(work => ({
+            company: work.company || '',
+            title: work.title || '',
+            startDate: work.startDate || '',
+            endDate: work.endDate || '',
+            description: work.description || ''
+        }))
+    };
+}
+

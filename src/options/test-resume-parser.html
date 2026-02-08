@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Parser Test</title>
+    <script src="jszip.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        .success {
+            color: green;
+        }
+
+        .error {
+            color: red;
+        }
+
+        .info {
+            color: #666;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Resume Parser Test Page</h1>
+
+    <div class="test-section">
+        <h2>Test Resume Parsing</h2>
+        <p class="info">Upload the resume files to test the parser:</p>
+        <input type="file" id="fileInput" accept=".tex,.zip" multiple>
+        <button onclick="testParser()">Parse Resume</button>
+        <div id="results"></div>
+    </div>
+
+    <script src="resume-parser.js"></script>
+    <script>
+        async function testParser() {
+            const fileInput = document.getElementById('fileInput');
+            const resultsDiv = document.getElementById('results');
+
+            if (!fileInput.files || fileInput.files.length === 0) {
+                resultsDiv.innerHTML = '<p class="error">Please select a file first!</p>';
+                return;
+            }
+
+            try {
+                resultsDiv.innerHTML = '<p class="info">Parsing...</p>';
+
+                const parser = new ResumeParser();
+                const result = await parser.parseFiles(fileInput.files);
+
+                // Format results for display
+                let html = '<h3 class="success">✓ Parsing Successful!</h3>';
+
+                html += '<h4>Personal Information:</h4><pre>';
+                html += `Name: ${result.firstName} ${result.lastName}\n`;
+                html += `Email: ${result.email}\n`;
+                html += `Phone: ${result.phone}\n`;
+                html += `Location: ${result.location}\n`;
+                html += `City: ${result.city}\n`;
+                html += `Country: ${result.country}`;
+                html += '</pre>';
+
+                html += '<h4>Links:</h4><pre>';
+                html += `LinkedIn: ${result.linkedin}\n`;
+                html += `GitHub: ${result.github}\n`;
+                html += `Portfolio: ${result.portfolio}`;
+                html += '</pre>';
+
+                html += '<h4>Profile Data:</h4><pre>';
+                html += `Experience Years: ${result.experience}\n`;
+                html += `Summary: ${result.summary.substring(0, 150)}...\n`;
+                html += `Skills: ${result.skills.substring(0, 200)}...`;
+                html += '</pre>';
+
+                html += `<h4>Education (${result.education.length} entries):</h4>`;
+                result.education.forEach((edu, idx) => {
+                    html += `<pre><strong>Entry ${idx + 1}:</strong>\n`;
+                    html += `  Degree: ${edu.degree}\n`;
+                    html += `  Institution: ${edu.institution}\n`;
+                    html += `  Start Date: ${edu.startDate}\n`;
+                    html += `  End Date: ${edu.endDate}</pre>`;
+                });
+
+                html += `<h4>Work History (${result.workHistory.length} entries):</h4>`;
+                result.workHistory.forEach((work, idx) => {
+                    html += `<pre><strong>Entry ${idx + 1}:</strong>\n`;
+                    html += `  Company: ${work.company}\n`;
+                    html += `  Title: ${work.title}\n`;
+                    html += `  Start Date: ${work.startDate}\n`;
+                    html += `  End Date: ${work.endDate}\n`;
+                    html += `  Description: ${work.description.substring(0, 100)}...</pre>`;
+                });
+
+                resultsDiv.innerHTML = html;
+
+                console.log('Full parsed data:', result);
+
+            } catch (error) {
+                resultsDiv.innerHTML = `<p class="error">Error: ${error.message}</p><pre>${error.stack}</pre>`;
+                console.error('Parsing error:', error);
+            }
+        }
+    </script>
+</body>
+
+</html>
