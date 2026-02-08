@@ -12,46 +12,54 @@ class ResumeParser {
     /**
      * Main entry point for parsing resume files
      * @param {FileList|File[]} files - Files to parse (can include .tex, .zip)
-     * @returns {Promise<Object>} Parsed profile data
+     * @returns {Promise<Array>} Array of parsed profile data objects
      */
     async parseFiles(files) {
-        try {
-            let texContent = null;
-            let resumeName = 'Resume';
+        const results = [];
+        let errorCount = 0;
 
+        try {
             // Handle different file types
             for (const file of files) {
-                const fileName = file.name.toLowerCase();
+                try {
+                    let texContent = null;
+                    let resumeName = 'Resume';
+                    const fileName = file.name.toLowerCase();
 
-                if (fileName.endsWith('.zip')) {
-                    // Extract and parse ZIP file
-                    const extractedContent = await this.extractZip(file);
-                    if (extractedContent) {
-                        texContent = extractedContent.content;
-                        resumeName = extractedContent.name;
-                        break;
+                    if (fileName.endsWith('.zip')) {
+                        // Extract and parse ZIP file
+                        const extractedContent = await this.extractZip(file);
+                        if (extractedContent) {
+                            texContent = extractedContent.content;
+                            resumeName = extractedContent.name;
+                        }
+                    } else if (fileName.endsWith('.tex')) {
+                        // Read TEX file directly
+                        texContent = await this.readFileAsText(file);
+                        resumeName = file.name.replace('.tex', '');
                     }
-                } else if (fileName.endsWith('.tex')) {
-                    // Read TEX file directly
-                    texContent = await this.readFileAsText(file);
-                    resumeName = file.name.replace('.tex', '');
-                    break;
+
+                    if (texContent) {
+                        // Parse the LaTeX content
+                        const profileData = this.parseLatexResume(texContent);
+                        profileData._resumeName = resumeName;
+                        results.push(profileData);
+                    }
+                } catch (err) {
+                    console.error(`Error processing file ${file.name}:`, err);
+                    errorCount++;
                 }
             }
 
-            if (!texContent) {
-                throw new Error('No .tex or .zip file found. Please upload a LaTeX resume file or ZIP archive.');
+            if (results.length === 0) {
+                throw new Error('No valid .tex or .zip files found or all failed to parse.');
             }
 
-            // Parse the LaTeX content
-            const profileData = this.parseLatexResume(texContent);
-            profileData._resumeName = resumeName;
-
-            this.parsedData = profileData;
-            return profileData;
+            this.parsedData = results;
+            return results;
 
         } catch (error) {
-            console.error('Resume parsing error:', error);
+            console.error('Resume parsing overall error:', error);
             throw error;
         }
     }

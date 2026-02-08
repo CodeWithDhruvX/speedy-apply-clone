@@ -1003,24 +1003,35 @@ async function handleResumeImport(event) {
 
         // Use ResumeParser to parse the files
         const parser = new ResumeParser();
-        const parsedData = await parser.parseFiles(files);
+        const parsedResults = await parser.parseFiles(files);
 
-        if (!parsedData) {
-            throw new Error('Failed to parse resume data');
+        if (!parsedResults || parsedResults.length === 0) {
+            throw new Error('Failed to parse any resume data');
         }
 
-        // Map parsed data to profile format
-        const profileData = mapResumeToProfile(parsedData);
+        let importedCount = 0;
+        let lastImportedId = null;
 
-        // Create new profile from parsed data
-        const newProfile = {
-            id: 'profile-' + Date.now(),
-            name: `Imported: ${parsedData._resumeName || 'Resume'}`,
-            data: profileData
-        };
+        for (const parsedData of parsedResults) {
+            // Map parsed data to profile format
+            const profileData = mapResumeToProfile(parsedData);
 
-        profiles.push(newProfile);
-        activeProfileId = newProfile.id;
+            // Create new profile from parsed data
+            const newProfile = {
+                id: 'profile-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+                name: parsedData._resumeName || 'Resume',
+                data: profileData
+            };
+
+            profiles.push(newProfile);
+            lastImportedId = newProfile.id;
+            importedCount++;
+        }
+
+        // Switch to the last imported profile
+        if (lastImportedId) {
+            activeProfileId = lastImportedId;
+        }
 
         await chrome.storage.local.set({ profiles, activeProfileId });
 
@@ -1036,7 +1047,12 @@ async function handleResumeImport(event) {
             btn.disabled = false;
         }, 2000);
 
-        alert(`Resume imported successfully!\n\nExtracted:\n- Name: ${parsedData.firstName} ${parsedData.lastName}\n- Email: ${parsedData.email}\n- Phone: ${parsedData.phone}\n- ${parsedData.education.length} education entries\n- ${parsedData.workHistory.length} work entries\n\nReview and edit as needed.`);
+        if (importedCount === 1) {
+            const parsedData = parsedResults[0];
+            alert(`Resume imported successfully!\n\nExtracted:\n- Name: ${parsedData.firstName} ${parsedData.lastName}\n- Email: ${parsedData.email}\n- Phone: ${parsedData.phone}\n- ${parsedData.education.length} education entries\n- ${parsedData.workHistory.length} work entries\n\nReview and edit as needed.`);
+        } else {
+            alert(`${importedCount} resumes imported successfully! Check the profile selector to view them.`);
+        }
 
     } catch (error) {
         console.error('Resume import error:', error);
