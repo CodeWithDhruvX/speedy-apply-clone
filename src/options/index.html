@@ -64,7 +64,13 @@
             </div>
 
             <div class="card recent-activity">
-                <h3>Recent Applications</h3>
+                <div class="table-header">
+                    <h3>Recent Applications</h3>
+                    <div class="table-controls">
+                        <input type="text" id="searchInput" class="search-input"
+                            placeholder="Search by company, role, or URL...">
+                    </div>
+                </div>
                 <table>
                     <thead>
                         <tr>
@@ -78,6 +84,16 @@
                         <!-- Rows injected by JS -->
                     </tbody>
                 </table>
+                <div class="pagination-controls">
+                    <button id="prevPageBtn" class="pagination-btn secondary-btn">← Previous</button>
+                    <span id="pageInfo" class="page-info">Page 1 of 1</span>
+                    <div class="page-jump">
+                        <span class="page-jump-label">Go to:</span>
+                        <input type="number" id="pageJumpInput" class="page-jump-input" min="1" placeholder="#" />
+                        <button id="pageJumpBtn" class="pagination-btn secondary-btn">Go</button>
+                    </div>
+                    <button id="nextPageBtn" class="pagination-btn secondary-btn">Next →</button>
+                </div>
             </div>
         </div>
 

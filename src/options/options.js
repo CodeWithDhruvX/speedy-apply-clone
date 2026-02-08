@@ -35,6 +35,11 @@ function setupNavigation() {
 }
 
 // --- Dashboard Logic ---
+let currentPage = 1;
+let itemsPerPage = 10;
+let searchQuery = '';
+let allLogs = [];
+
 async function initDashboard() {
     // Set Date
     const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
@@ -43,101 +48,247 @@ async function initDashboard() {
 
     // Load Data
     const data = await chrome.storage.local.get(['applicationLog', 'stats']);
-    const logs = data.applicationLog || [];
+    allLogs = data.applicationLog || [];
 
     // Calculate Stats
     const today = new Date().toDateString();
-    const todayLogs = logs.filter(log => new Date(log.timestamp).toDateString() === today);
+    const todayLogs = allLogs.filter(log => new Date(log.timestamp).toDateString() === today);
 
     const todayCountElem = document.getElementById('todayCount');
     if (todayCountElem) todayCountElem.textContent = todayLogs.length;
 
     const totalCountElem = document.getElementById('totalCount');
-    if (totalCountElem) totalCountElem.textContent = logs.length;
+    if (totalCountElem) totalCountElem.textContent = allLogs.length;
 
-    // Render Table
-    const tableBody = document.getElementById('activityTable');
-    if (tableBody) {
-        tableBody.innerHTML = '';
-        if (logs.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;">No applications yet. Start applying!</td></tr>';
-        } else {
-            // Show last 10
-            logs.slice().reverse().slice(0, 10).forEach(log => {
-                const row = document.createElement('tr');
-                let displayUrl = log.site;
-                try {
-                    // Try to make it shorter but keep protocol: "https://domain.com/path..."
-                    const urlObj = new URL(log.site);
-                    const path = urlObj.pathname.length > 20 ? urlObj.pathname.substring(0, 20) + '...' : urlObj.pathname;
-                    displayUrl = urlObj.origin + path;
-                } catch (e) {
-                    // Fallback
-                    if (displayUrl.length > 40) displayUrl = displayUrl.substring(0, 40) + '...';
-                }
-
-                row.innerHTML = `
-                    <td>
-                        <div class="url-cell">
-                            <span title="${log.site}">${displayUrl}</span>
-                            <button class="copy-btn" data-url="${log.site}" title="Copy URL">📋</button>
-                        </div>
-                    </td>
-                    <td>${log.role || 'N/A'}</td>
-                    <td>${new Date(log.timestamp).toLocaleDateString()} ${new Date(log.timestamp).toLocaleTimeString()}</td>
-                    <td><span class="status-badge">Applied</span></td>
-                    <td>
-                        <button class="delete-btn danger-btn" data-timestamp="${log.timestamp}" title="Delete Record">🗑️</button>
-                    </td>
-                `;
-                tableBody.appendChild(row);
-            });
-
-            // Add copy listeners
-            document.querySelectorAll('.copy-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const url = e.currentTarget.dataset.url;
-                    navigator.clipboard.writeText(url).then(() => {
-                        const original = e.currentTarget.textContent;
-                        e.currentTarget.textContent = '✅';
-                        setTimeout(() => e.currentTarget.textContent = original, 1000);
-                    });
-                });
-            });
-
-            // Add delete listeners
-            document.querySelectorAll('.delete-btn').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    const timestamp = e.currentTarget.dataset.timestamp;
-                    if (confirm('Are you sure you want to delete this record?')) {
-                        const data = await chrome.storage.local.get(['applicationLog']);
-                        const currentLogs = data.applicationLog || [];
-                        const newLogs = currentLogs.filter(log => String(log.timestamp) !== timestamp);
-                        await chrome.storage.local.set({ applicationLog: newLogs });
-                        initDashboard(); // Refresh
-                    }
-                });
-            });
-        }
+    // Setup search functionality
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.value = searchQuery;
+        searchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value.toLowerCase();
+            currentPage = 1; // Reset to first page on search
+            renderTable();
+        });
     }
 
-    // Setup Filter Listeners
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            // Update active state
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            e.target.classList.add('active');
-
-            // Render chart
-            const range = e.target.dataset.range;
-            renderChart(logs, document.getElementById('activityChart'), range);
+    // Setup pagination
+    const prevBtn = document.getElementById('prevPageBtn');
+    const nextBtn = document.getElementById('nextPageBtn');
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTable();
+            }
         });
-    });
+    }
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            const filteredLogs = getFilteredLogs();
+            const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderTable();
+            }
+        });
+    }
 
+    // Setup page jump
+    const pageJumpInput = document.getElementById('pageJumpInput');
+    const pageJumpBtn = document.getElementById('pageJumpBtn');
+
+    const handlePageJump = () => {
+        const filteredLogs = getFilteredLogs();
+        const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
+        const targetPage = parseInt(pageJumpInput.value);
+
+        if (targetPage && targetPage >= 1 && targetPage <= totalPages) {
+            currentPage = targetPage;
+            renderTable();
+            pageJumpInput.value = ''; // Clear input after jump
+        } else if (targetPage) {
+            // Invalid page number - show feedback
+            pageJumpInput.style.borderColor = '#ef4444';
+            setTimeout(() => {
+                pageJumpInput.style.borderColor = '';
+            }, 1000);
+        }
+    };
+
+    if (pageJumpBtn) {
+        pageJumpBtn.addEventListener('click', handlePageJump);
+    }
+
+    if (pageJumpInput) {
+        // Allow Enter key to jump
+        pageJumpInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handlePageJump();
+            }
+        });
+    }
+
+    // Render Table
+    renderTable();
     // Render Chart (Default: Weekly)
     const chart = document.getElementById('activityChart');
-    if (chart) renderChart(logs, chart, 'weekly');
+    if (chart) renderChart(allLogs, chart, 'weekly');
 }
+
+function getFilteredLogs() {
+    if (!searchQuery) return allLogs;
+
+    return allLogs.filter(log => {
+        const siteMatch = log.site.toLowerCase().includes(searchQuery);
+        const roleMatch = (log.role || '').toLowerCase().includes(searchQuery);
+        return siteMatch || roleMatch;
+    });
+}
+
+function renderTable() {
+    const tableBody = document.getElementById('activityTable');
+    if (!tableBody) return;
+
+    const filteredLogs = getFilteredLogs();
+    const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
+
+    // Ensure current page is valid
+    if (currentPage > totalPages && totalPages > 0) {
+        currentPage = totalPages;
+    }
+    if (currentPage < 1) {
+        currentPage = 1;
+    }
+
+    tableBody.innerHTML = '';
+
+    if (filteredLogs.length === 0) {
+        const message = searchQuery ? 'No applications found matching your search.' : 'No applications yet. Start applying!';
+        tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px;">${message}</td></tr>`;
+    } else {
+        // Get logs for current page (reverse to show newest first)
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const pageData = filteredLogs.slice().reverse().slice(startIndex, endIndex);
+
+        pageData.forEach(log => {
+            const row = document.createElement('tr');
+            let displayUrl = log.site;
+            try {
+                const urlObj = new URL(log.site);
+                const path = urlObj.pathname.length > 20 ? urlObj.pathname.substring(0, 20) + '...' : urlObj.pathname;
+                displayUrl = urlObj.origin + path;
+            } catch (e) {
+                if (displayUrl.length > 40) displayUrl = displayUrl.substring(0, 40) + '...';
+            }
+
+            row.innerHTML = `
+                <td>
+                    <div class="url-cell">
+                        <span title="${log.site}">${displayUrl}</span>
+                        <button class="open-btn" data-url="${log.site}" title="Open in New Tab">↗️</button>
+                        <button class="copy-btn" data-url="${log.site}" title="Copy URL">📋</button>
+                    </div>
+                </td>
+                <td>${log.role || 'N/A'}</td>
+                <td>${new Date(log.timestamp).toLocaleDateString()} ${new Date(log.timestamp).toLocaleTimeString()}</td>
+                <td><span class="status-badge">Applied</span></td>
+                <td>
+                    <button class="delete-btn danger-btn" data-timestamp="${log.timestamp}" title="Delete Record">🗑️</button>
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+
+        // Add event listeners
+        document.querySelectorAll('.open-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const url = e.currentTarget.dataset.url;
+                chrome.tabs.create({ url: url });
+            });
+        });
+
+        document.querySelectorAll('.copy-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const url = e.currentTarget.dataset.url;
+                navigator.clipboard.writeText(url).then(() => {
+                    const original = e.currentTarget.textContent;
+                    e.currentTarget.textContent = '✅';
+                    setTimeout(() => e.currentTarget.textContent = original, 1000);
+                });
+            });
+        });
+
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const timestamp = e.currentTarget.dataset.timestamp;
+                if (confirm('Are you sure you want to delete this record?')) {
+                    const data = await chrome.storage.local.get(['applicationLog']);
+                    const currentLogs = data.applicationLog || [];
+                    const newLogs = currentLogs.filter(log => String(log.timestamp) !== timestamp);
+                    await chrome.storage.local.set({ applicationLog: newLogs });
+                    allLogs = newLogs;
+                    renderTable();
+
+                    // Update stats
+                    const totalCountElem = document.getElementById('totalCount');
+                    if (totalCountElem) totalCountElem.textContent = newLogs.length;
+
+                    const today = new Date().toDateString();
+                    const todayLogs = newLogs.filter(log => new Date(log.timestamp).toDateString() === today);
+                    const todayCountElem = document.getElementById('todayCount');
+                    if (todayCountElem) todayCountElem.textContent = todayLogs.length;
+                }
+            });
+        });
+    }
+
+    // Update pagination controls
+    updatePaginationControls(filteredLogs.length, totalPages)
+}
+
+function updatePaginationControls(totalItems, totalPages) {
+    const prevBtn = document.getElementById('prevPageBtn');
+    const nextBtn = document.getElementById('nextPageBtn');
+    const pageInfo = document.getElementById('pageInfo');
+    const pageJumpInput = document.getElementById('pageJumpInput');
+
+    if (prevBtn) {
+        prevBtn.disabled = currentPage <= 1;
+    }
+
+    if (nextBtn) {
+        nextBtn.disabled = currentPage >= totalPages || totalPages === 0;
+    }
+
+    if (pageInfo) {
+        const showing = totalItems === 0 ? 0 : totalItems;
+        pageInfo.textContent = `Page ${currentPage} of ${totalPages || 1} (${showing} total)`;
+    }
+
+    // Update page jump input max value
+    if (pageJumpInput) {
+        pageJumpInput.max = totalPages || 1;
+        pageJumpInput.placeholder = totalPages > 0 ? `1-${totalPages}` : '#';
+    }
+}
+
+// Keep chart filter functionality
+function setupChartFilters() {
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            const range = e.target.dataset.range;
+            renderChart(allLogs, document.getElementById('activityChart'), range);
+        });
+    });
+}
+
+// Call setupChartFilters after DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    setupChartFilters();
+});
 
 function renderChart(logs, chartElement, range = 'weekly') {
     chartElement.innerHTML = ''; // Clear previous

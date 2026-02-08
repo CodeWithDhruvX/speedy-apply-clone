@@ -33,9 +33,61 @@ document.addEventListener('DOMContentLoaded', async () => {
     autoFillToggle.addEventListener('change', () => {
         const isEnabled = autoFillToggle.checked;
         chrome.storage.local.set({ isAutoFillEnabled: isEnabled }, () => {
-            showStatus(isEnabled ? 'Auto-fill Enabled' : 'Auto-fill Disabled', 'success');
+            showStatus(isEnabled ? 'Global Auto-fill Enabled' : 'Global Auto-fill Disabled', 'success');
         });
     });
+
+    // 0.5. Init Page-Specific Toggle
+    const pageSpecificToggle = document.getElementById('pageSpecificToggle');
+    const currentDomainEl = document.getElementById('currentDomain');
+
+    // Get current tab's domain
+    try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tab && tab.url) {
+            let currentDomain = null;
+            try {
+                const url = new URL(tab.url);
+                currentDomain = url.hostname.replace(/^www\./, '');
+            } catch (e) {
+                console.error('Error parsing URL:', e);
+            }
+
+            if (currentDomain && currentDomainEl) {
+                currentDomainEl.textContent = currentDomain;
+
+                // Load page-specific setting
+                chrome.storage.local.get(['pageSpecificSettings'], (result) => {
+                    const pageSettings = result.pageSpecificSettings || {};
+                    const isEnabled = pageSettings[currentDomain] !== false; // Default true
+                    pageSpecificToggle.checked = isEnabled;
+                });
+
+                // Add event listener for page-specific toggle
+                pageSpecificToggle.addEventListener('change', () => {
+                    const isEnabled = pageSpecificToggle.checked;
+                    chrome.storage.local.get(['pageSpecificSettings'], (result) => {
+                        const pageSettings = result.pageSpecificSettings || {};
+                        pageSettings[currentDomain] = isEnabled;
+                        chrome.storage.local.set({ pageSpecificSettings: pageSettings }, () => {
+                            showStatus(
+                                isEnabled ? `Auto-fill enabled for ${currentDomain}` : `Auto-fill disabled for ${currentDomain}`,
+                                'success'
+                            );
+                        });
+                    });
+                });
+            } else if (currentDomainEl) {
+                currentDomainEl.textContent = 'Not a web page';
+                pageSpecificToggle.disabled = true;
+            }
+        }
+    } catch (e) {
+        console.error('Error getting current tab:', e);
+        if (currentDomainEl) {
+            currentDomainEl.textContent = 'Error loading';
+        }
+    }
 
     try {
         const data = await chrome.storage.local.get(['profiles', 'activeProfileId', 'profile']);

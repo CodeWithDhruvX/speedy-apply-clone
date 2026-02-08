@@ -24,6 +24,18 @@
     // We also need to fix 'window.SpeedyInjector' calls to be safe if checking existence.
     // But they should exist.
 
+    // Helper: Extract domain from URL
+    function getDomain() {
+        try {
+            const hostname = window.location.hostname;
+            // Remove 'www.' prefix if present
+            return hostname.replace(/^www\./, '');
+        } catch (e) {
+            console.error('SpeedyApply: Error extracting domain', e);
+            return null;
+        }
+    }
+
     const Engine = {
         init: function () {
             // Initial scan
@@ -48,6 +60,13 @@
                 if (namespace === 'local' && changes.isAutoFillEnabled) {
                     this.updateToggleUI(changes.isAutoFillEnabled.newValue);
                 }
+                if (namespace === 'local' && changes.pageSpecificSettings) {
+                    const domain = getDomain();
+                    if (domain) {
+                        const newSettings = changes.pageSpecificSettings.newValue || {};
+                        this.updatePageToggleUI(newSettings[domain] !== false);
+                    }
+                }
             });
         },
 
@@ -68,10 +87,68 @@
                 alignItems: 'center'
             });
 
-            // 1. Toggle Button
+            // Get current domain for page-specific toggle
+            const currentDomain = getDomain();
+            const initialStorage = await chrome.storage.local.get(['isAutoFillEnabled', 'pageSpecificSettings']);
+            const pageSettings = initialStorage.pageSpecificSettings || {};
+
+            // 0. Page-Specific Toggle Button
+            if (currentDomain) {
+                const pageToggleBtn = document.createElement('button');
+                pageToggleBtn.id = 'speedy-apply-page-toggle';
+
+                // Format domain name for display (capitalize first letter)
+                const domainDisplay = currentDomain.split('.')[0].charAt(0).toUpperCase() +
+                    currentDomain.split('.')[0].slice(1);
+
+                pageToggleBtn.title = `Enable/Disable auto-fill for ${currentDomain}`;
+                Object.assign(pageToggleBtn.style, {
+                    minWidth: '120px',
+                    height: '32px',
+                    borderRadius: '16px',
+                    backgroundColor: '#f3f4f6',
+                    color: '#374151',
+                    border: '1px solid #d1d5db',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s',
+                    marginBottom: '8px',
+                    padding: '0 12px',
+                    fontFamily: 'system-ui, -apple-system, sans-serif'
+                });
+
+                pageToggleBtn.onclick = async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    // Get current page-specific state
+                    const currentStorage = await chrome.storage.local.get('pageSpecificSettings');
+                    const currentPageSettings = currentStorage.pageSpecificSettings || {};
+                    const currentState = currentPageSettings[currentDomain] !== false; // Default true
+                    const newState = !currentState;
+
+                    // Update page-specific settings
+                    currentPageSettings[currentDomain] = newState;
+                    await chrome.storage.local.set({ pageSpecificSettings: currentPageSettings });
+
+                    // UI update
+                    this.updatePageToggleUI(newState);
+
+                    console.log(`SpeedyApply: Page-specific auto-fill for ${currentDomain} ${newState ? 'Enabled' : 'Disabled'}`);
+                };
+
+                container.appendChild(pageToggleBtn);
+            }
+
+            // 1. Global Toggle Button
             const toggleBtn = document.createElement('button');
             toggleBtn.id = 'speedy-apply-toggle';
-            toggleBtn.title = 'SpeedyApply: Enable/Disable';
+            toggleBtn.title = 'SpeedyApply: Global Enable/Disable';
             Object.assign(toggleBtn.style, {
                 width: '40px',
                 height: '40px',
@@ -147,9 +224,11 @@
             container.appendChild(fillBtn);
             document.body.appendChild(container);
 
-            // Initialize Toggle State
-            const storage = await chrome.storage.local.get('isAutoFillEnabled');
-            this.updateToggleUI(storage.isAutoFillEnabled !== false);
+            // Initialize Toggle States
+            this.updateToggleUI(initialStorage.isAutoFillEnabled !== false);
+            if (currentDomain) {
+                this.updatePageToggleUI(pageSettings[currentDomain] !== false);
+            }
         },
 
         updateToggleUI: function (isEnabled) {
@@ -169,17 +248,54 @@
             }
         },
 
+        updatePageToggleUI: function (isEnabled) {
+            const btn = document.getElementById('speedy-apply-page-toggle');
+            if (!btn) return;
+
+            const currentDomain = getDomain();
+            if (!currentDomain) return;
+
+            // Format domain name for display
+            const domainDisplay = currentDomain.split('.')[0].charAt(0).toUpperCase() +
+                currentDomain.split('.')[0].slice(1);
+
+            if (isEnabled) {
+                btn.innerText = `${domainDisplay}: ✅`;
+                btn.style.backgroundColor = '#dcfce7'; // green-100
+                btn.style.color = '#166534'; // green-800
+                btn.title = `Auto-fill enabled for ${currentDomain}`;
+            } else {
+                btn.innerText = `${domainDisplay}: 🚫`;
+                btn.style.backgroundColor = '#fee2e2'; // red-100
+                btn.style.color = '#991b1b'; // red-800
+                btn.title = `Auto-fill disabled for ${currentDomain}`;
+            }
+        },
+
         scanAndFill: async function (force = false) {
             try {
                 // RE-FETCH PROFILE DATA to ensure we use the latest active profile
-                const storage = await chrome.storage.local.get(['profile', 'profiles', 'activeProfileId', 'isAutoFillEnabled']);
+                const storage = await chrome.storage.local.get(['profile', 'profiles', 'activeProfileId', 'isAutoFillEnabled', 'pageSpecificSettings']);
 
                 let currentProfileData = null;
 
-                // Check if auto-fill is enabled
+                // Check if auto-fill is enabled globally
                 if (!force && storage.isAutoFillEnabled === false) {
-                    console.log("SpeedyApply: Auto-fill disabled by user.");
+                    console.log("SpeedyApply: Auto-fill disabled globally.");
                     return;
+                }
+
+                // Check if auto-fill is enabled for this specific page
+                if (!force) {
+                    const currentDomain = getDomain();
+                    if (currentDomain) {
+                        const pageSettings = storage.pageSpecificSettings || {};
+                        const pageEnabled = pageSettings[currentDomain] !== false; // Default true
+                        if (!pageEnabled) {
+                            console.log(`SpeedyApply: Auto-fill disabled for ${currentDomain}.`);
+                            return;
+                        }
+                    }
                 }
 
                 if (storage.profiles && storage.activeProfileId) {
