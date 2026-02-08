@@ -18,19 +18,7 @@
     "content_scripts": [
         {
             "matches": [
-                "https://*.greenhouse.io/*",
-                "https://*.lever.co/*",
-                "https://*.myworkdayjobs.com/*",
-                "https://*.hirist.com/*",
-                "https://*.hirist.tech/*",
-                "https://*.iimjobs.com/*",
-                "https://*.instahyre.com/*",
-                "https://*.foundit.in/*",
-                "https://*.monsterindia.com/*",
-                "https://*.linkedin.com/*",
-                "https://*.indeed.com/*",
-                "https://smartapply.indeed.com/*",
-                "https://docs.google.com/forms/*"
+                "<all_urls>"
             ],
             "js": [
                 "src/data/dictionary.js",

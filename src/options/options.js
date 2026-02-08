@@ -7,6 +7,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 3. Initialize Profile
     initProfile();
+
+    // 4. Setup Copy Feature
+    setupCopyFeature();
 });
 
 function setupNavigation() {
@@ -514,6 +517,52 @@ function initProfile() {
 
     document.getElementById('addEducationBtn').addEventListener('click', () => addEducationItem());
     document.getElementById('addWorkBtn').addEventListener('click', () => addWorkItem());
+
+    // Inject buttons for initial static fields
+    injectCopyButtons();
+}
+
+function setupCopyFeature() {
+    // Global event listener for copy buttons
+    document.body.addEventListener('click', (e) => {
+        if (e.target.classList.contains('copy-field-btn')) {
+            e.preventDefault();
+            const btn = e.target;
+            const label = btn.parentElement;
+            const formGroup = label.parentElement;
+
+            // Find input/textarea in the same form-group
+            const input = formGroup.querySelector('input, textarea, select');
+
+            if (input) {
+                const value = input.value;
+                if (value) {
+                    navigator.clipboard.writeText(value).then(() => {
+                        const originalText = btn.textContent;
+                        btn.textContent = '✅';
+                        setTimeout(() => {
+                            btn.textContent = originalText;
+                        }, 1000);
+                    });
+                }
+            }
+        }
+    });
+}
+
+function injectCopyButtons() {
+    const labels = document.querySelectorAll('.form-group > label');
+    labels.forEach(label => {
+        // Check if button already exists
+        if (!label.querySelector('.copy-field-btn')) {
+            const btn = document.createElement('button');
+            btn.className = 'copy-field-btn';
+            btn.title = 'Copy value';
+            btn.textContent = '📋';
+            btn.type = 'button'; // Prevent form submission
+            label.appendChild(btn);
+        }
+    });
 }
 
 async function loadProfile() {
@@ -817,23 +866,23 @@ function addEducationItem(data = {}) {
         <button class="remove-btn danger-btn">Remove</button>
         <div class="form-grid">
             <div class="form-group">
-                <label>School / University</label>
+                <label>School / University <button class="copy-field-btn" title="Copy value" type="button">📋</button></label>
                 <input type="text" class="form-input edu-school" value="${data.school || ''}">
             </div>
             <div class="form-group">
-                <label>Degree</label>
+                <label>Degree <button class="copy-field-btn" title="Copy value" type="button">📋</button></label>
                 <input type="text" class="form-input edu-degree" value="${data.degree || ''}">
             </div>
             <div class="form-group">
-                <label>Field of Study</label>
+                <label>Field of Study <button class="copy-field-btn" title="Copy value" type="button">📋</button></label>
                 <input type="text" class="form-input edu-field" value="${data.field || ''}">
             </div>
             <div class="form-group">
-                <label>Start Date</label>
+                <label>Start Date <button class="copy-field-btn" title="Copy value" type="button">📋</button></label>
                 <input type="text" class="form-input edu-start" value="${data.startDate || ''}" placeholder="YYYY-MM">
             </div>
             <div class="form-group">
-                <label>End Date</label>
+                <label>End Date <button class="copy-field-btn" title="Copy value" type="button">📋</button></label>
                 <input type="text" class="form-input edu-end" value="${data.endDate || ''}" placeholder="YYYY-MM or Present">
             </div>
         </div>
@@ -854,23 +903,23 @@ function addWorkItem(data = {}) {
         <button class="remove-btn danger-btn">Remove</button>
         <div class="form-grid">
             <div class="form-group">
-                <label>Company</label>
+                <label>Company <button class="copy-field-btn" title="Copy value" type="button">📋</button></label>
                 <input type="text" class="form-input work-company" value="${data.company || ''}">
             </div>
             <div class="form-group">
-                <label>Job Title</label>
+                <label>Job Title <button class="copy-field-btn" title="Copy value" type="button">📋</button></label>
                 <input type="text" class="form-input work-title" value="${data.title || ''}">
             </div>
             <div class="form-group">
-                <label>Start Date</label>
+                <label>Start Date <button class="copy-field-btn" title="Copy value" type="button">📋</button></label>
                 <input type="text" class="form-input work-start" value="${data.startDate || ''}" placeholder="YYYY-MM">
             </div>
             <div class="form-group">
-                <label>End Date</label>
+                <label>End Date <button class="copy-field-btn" title="Copy value" type="button">📋</button></label>
                 <input type="text" class="form-input work-end" value="${data.endDate || ''}" placeholder="YYYY-MM or Present">
             </div>
             <div class="form-group full-width">
-                <label>Description (Role Responsibilities)</label>
+                <label>Description (Role Responsibilities) <button class="copy-field-btn" title="Copy value" type="button">📋</button></label>
                 <textarea class="form-input work-desc">${data.description || ''}</textarea>
             </div>
         </div>

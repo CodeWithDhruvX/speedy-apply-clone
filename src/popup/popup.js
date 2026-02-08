@@ -145,7 +145,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             populateForm(active.data);
             showStatus(`Loaded: ${active.name}`, 'success');
         }
+        // Inject copy buttons after form is populated
+        setTimeout(injectCopyButtons, 100);
     }
+
+    // 2.1 Setup Copy Feature
+    setupCopyFeature();
 
     // 3. Save Data
     form.addEventListener('submit', async (e) => {
@@ -262,5 +267,54 @@ document.addEventListener('DOMContentLoaded', async () => {
         setTimeout(() => {
             status.textContent = '';
         }, 3000);
+    }
+
+
+    function setupCopyFeature() {
+        // Global event listener for copy buttons
+        document.body.addEventListener('click', (e) => {
+            if (e.target.classList.contains('copy-field-btn')) {
+                e.preventDefault();
+                const btn = e.target;
+                const label = btn.parentElement;
+
+                // In popup, input is usually sibling of label in .form-group
+                const formGroup = label.parentElement;
+                const input = formGroup.querySelector('input, textarea, select');
+
+                if (input) {
+                    const value = input.value;
+                    if (value) {
+                        navigator.clipboard.writeText(value).then(() => {
+                            const originalText = btn.textContent;
+                            btn.textContent = '✅';
+                            btn.style.color = 'var(--success)';
+                            btn.style.opacity = '1';
+
+                            setTimeout(() => {
+                                btn.textContent = originalText;
+                                btn.style.color = '';
+                                btn.style.opacity = '';
+                            }, 1000);
+                        });
+                    }
+                }
+            }
+        });
+    }
+
+    function injectCopyButtons() {
+        const labels = document.querySelectorAll('.form-group > label');
+        labels.forEach(label => {
+            // Check if button already exists
+            if (!label.querySelector('.copy-field-btn')) {
+                const btn = document.createElement('button');
+                btn.className = 'copy-field-btn';
+                btn.title = 'Copy value';
+                btn.textContent = '📋';
+                btn.type = 'button'; // Prevent form submission
+                label.appendChild(btn);
+            }
+        });
     }
 });
