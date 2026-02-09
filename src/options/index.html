@@ -16,6 +16,7 @@
         <nav>
             <a href="#" id="nav-dashboard" class="active">Dashboard</a>
             <a href="#" id="nav-profile">Profile</a>
+            <a href="#" id="nav-email">Email Generator</a>
         </nav>
     </div>
 
@@ -156,6 +157,10 @@
                         <label>Phone</label>
                         <input type="tel" id="p-phone" class="form-input">
                     </div>
+                    <div class="form-group">
+                        <label>Date of Birth</label>
+                        <input type="date" id="p-dob" class="form-input">
+                    </div>
                     <div class="form-group full-width">
                         <label>Address / Location</label>
                         <input type="text" id="p-location" class="form-input">
@@ -273,81 +278,146 @@
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Job Preferences Section -->
+        <div class="card">
+            <h3>Identity Details</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Passport Number</label>
+                    <input type="text" id="lg-passportNumber" class="form-input" placeholder="A1234567">
+                </div>
+                <div class="form-group">
+                    <label>Passport Expiry</label>
+                    <input type="date" id="lg-passportExpiry" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label>PAN Card Number</label>
+                    <input type="text" id="lg-panNumber" class="form-input" placeholder="ABCDE1234F">
+                </div>
+            </div>
+        </div>
+
+        <!-- Job Preferences Section -->
+        <div class="card">
+            <h3>Job Preferences</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Notice Period</label>
+                    <select id="pref-noticePeriod" class="form-input">
+                        <option value="">Select...</option>
+                        <option value="Immediately">Immediately</option>
+                        <option value="15 Days">15 Days</option>
+                        <option value="30 Days">30 Days</option>
+                        <option value="60 Days">60 Days</option>
+                        <option value="90 Days">90 Days</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Current CTC</label>
+                    <input type="text" id="pref-currentCtc" class="form-input" placeholder="e.g. 15 LPA">
+                </div>
+                <div class="form-group">
+                    <label>Expected CTC</label>
+                    <input type="text" id="pref-expectedCtc" class="form-input" placeholder="e.g. 20 LPA">
+                </div>
+                <div class="form-group">
+                    <label>Total Experience (Years)</label>
+                    <input type="number" id="pref-experience" class="form-input" placeholder="e.g. 5">
+                </div>
+                <div class="form-group">
+                    <label>Relevant Experience (Years)</label>
+                    <input type="text" id="pref-relevantType" class="form-input" placeholder="e.g. 4 Years">
+                </div>
+                <div class="form-group">
+                    <label>Preferred Location</label>
+                    <input type="text" id="pref-preferredLocation" class="form-input" placeholder="e.g. Pune">
+                </div>
+                <div class="form-group">
+                    <label>Holding Any Offers?</label>
+                    <input type="text" id="pref-holdingOffers" class="form-input" placeholder="Yes / No - Details">
+                </div>
+                <div class="form-group">
+                    <label>Career Gaps</label>
+                    <input type="text" id="pref-careerGaps" class="form-input" placeholder="No / Yes - Explanation">
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Extras Section -->
+        <div class="card">
+            <h3>Profile Extras</h3>
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label>Skills (Comma Separated)</label>
+                    <textarea id="pr-skills" class="form-input" rows="2"
+                        placeholder="Java, Python, React..."></textarea>
+                </div>
+                <div class="form-group full-width">
+                    <label>Reason for Change</label>
+                    <textarea id="pr-reasonForChange" class="form-input" rows="2"
+                        placeholder="Looking for better growth opportunities..."></textarea>
+                </div>
+                <div class="form-group full-width">
+                    <label>Summary / Bio</label>
+                    <textarea id="pr-summary" class="form-input" rows="3"
+                        placeholder="Brief professional summary..."></textarea>
+                </div>
+                <div class="form-group full-width">
+                    <label>Cover Letter (Generic)</label>
+                    <textarea id="doc-coverLetter" class="form-input" rows="4"
+                        placeholder="Dear Hiring Manager..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>Education</h3>
+                <button class="secondary-btn" id="addEducationBtn">+ Add</button>
+            </div>
+            <div id="education-list">
+                <!-- Education Items -->
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>Work History</h3>
+                <button class="secondary-btn" id="addWorkBtn">+ Add</button>
+            </div>
+            <div id="work-list">
+                <!-- Work Items -->
+            </div>
+        </div>
+        </div>
+
+        <!-- Email Generator View -->
+        <div id="view-email-generator" style="display: none;">
+            <header>
+                <h1>Email Generator</h1>
+                <p style="color: #9ca3af; margin-top: 5px;">Generate tailored emails using your profile data.</p>
+            </header>
+
             <div class="card">
-                <h3>Job Preferences</h3>
                 <div class="form-grid">
-                    <div class="form-group">
-                        <label>Notice Period</label>
-                        <select id="pref-noticePeriod" class="form-input">
-                            <option value="">Select...</option>
-                            <option value="Immediately">Immediately</option>
-                            <option value="15 Days">15 Days</option>
-                            <option value="30 Days">30 Days</option>
-                            <option value="60 Days">60 Days</option>
-                            <option value="90 Days">90 Days</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Current CTC</label>
-                        <input type="text" id="pref-currentCtc" class="form-input" placeholder="e.g. 15 LPA">
-                    </div>
-                    <div class="form-group">
-                        <label>Expected CTC</label>
-                        <input type="text" id="pref-expectedCtc" class="form-input" placeholder="e.g. 20 LPA">
-                    </div>
-                    <div class="form-group">
-                        <label>Total Experience (Years)</label>
-                        <input type="number" id="pref-experience" class="form-input" placeholder="e.g. 5">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Profile Extras Section -->
-            <div class="card">
-                <h3>Profile Extras</h3>
-                <div class="form-grid">
                     <div class="form-group full-width">
-                        <label>Skills (Comma Separated)</label>
-                        <textarea id="pr-skills" class="form-input" rows="2"
-                            placeholder="Java, Python, React..."></textarea>
+                        <label>Recruiter Name</label>
+                        <input type="text" id="email-recruiter" class="form-input" placeholder="HR / Recruiter Name">
                     </div>
                     <div class="form-group full-width">
-                        <label>Reason for Change</label>
-                        <textarea id="pr-reasonForChange" class="form-input" rows="2"
-                            placeholder="Looking for better growth opportunities..."></textarea>
+                        <button id="generateEmailBtn" class="primary-btn" style="width: 200px;">✨ Generate
+                            Email</button>
                     </div>
                     <div class="form-group full-width">
-                        <label>Summary / Bio</label>
-                        <textarea id="pr-summary" class="form-input" rows="3"
-                            placeholder="Brief professional summary..."></textarea>
+                        <label>Generated Email</label>
+                        <textarea id="generated-email-output" class="form-input" rows="20"
+                            placeholder="Click generate to see the email..."></textarea>
                     </div>
                     <div class="form-group full-width">
-                        <label>Cover Letter (Generic)</label>
-                        <textarea id="doc-coverLetter" class="form-input" rows="4"
-                            placeholder="Dear Hiring Manager..."></textarea>
+                        <button id="copyEmailBtn" class="secondary-btn" style="width: 200px;">📋 Copy to
+                            Clipboard</button>
                     </div>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    <h3>Education</h3>
-                    <button class="secondary-btn" id="addEducationBtn">+ Add</button>
-                </div>
-                <div id="education-list">
-                    <!-- Education Items -->
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    <h3>Work History</h3>
-                    <button class="secondary-btn" id="addWorkBtn">+ Add</button>
-                </div>
-                <div id="work-list">
-                    <!-- Work Items -->
                 </div>
             </div>
         </div>

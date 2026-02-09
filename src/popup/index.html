@@ -22,6 +22,7 @@
                     <!-- Options injected by JS -->
                 </select>
                 <button id="pinBtn" class="icon-btn" title="Pin Popup">📌</button>
+                <button id="minimizeBtn" class="icon-btn" style="display: none;" title="Minimize">➖</button>
                 <button id="unpinBtn" class="icon-btn" style="display: none;" title="Unpin/Close">❌</button>
             </div>
 
@@ -51,6 +52,7 @@
                 <button type="button" class="tab-btn" data-tab="work">Work</button>
                 <button type="button" class="tab-btn" data-tab="profile">Profile</button>
                 <button type="button" class="tab-btn" data-tab="legal">Legal</button>
+                <button type="button" class="tab-btn" data-tab="email-generator">Email</button>
                 <button type="button" class="tab-btn" id="tab-education" data-tab="education-history"
                     style="display: none;">Education</button>
                 <button type="button" class="tab-btn" id="tab-work-history" data-tab="work-history"
@@ -74,6 +76,10 @@
                 <div class="form-group">
                     <label>Phone</label>
                     <input type="tel" id="p-phone" name="personal.phone" placeholder="+1234567890">
+                </div>
+                <div class="form-group">
+                    <label>Date of Birth</label>
+                    <input type="date" id="p-dob" name="personal.dob">
                 </div>
             </div>
 
@@ -165,6 +171,22 @@
                         <option value="No">No</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label>Relevant Experience (Years)</label>
+                    <input type="text" name="preferences.relevantType" placeholder="e.g. 4 Years">
+                </div>
+                <div class="form-group">
+                    <label>Preferred Location</label>
+                    <input type="text" name="preferences.preferredLocation" placeholder="e.g. Pune">
+                </div>
+                <div class="form-group">
+                    <label>Holding Any Offers?</label>
+                    <input type="text" name="preferences.holdingOffers" placeholder="Yes / No - Details">
+                </div>
+                <div class="form-group">
+                    <label>Career Gaps</label>
+                    <input type="text" name="preferences.careerGaps" placeholder="No / Yes - Explanation">
+                </div>
             </div>
 
             <div class="tab-content" id="profile">
@@ -252,6 +274,37 @@
                         <option value="No">No</option>
                         <option value="Decline">Decline to Self-Identify</option>
                     </select>
+                </div>
+
+                <h3>Passport Details</h3>
+                <div class="form-group">
+                    <label>Passport Number</label>
+                    <input type="text" name="legal.passportNumber" placeholder="A1234567">
+                </div>
+                <div class="form-group">
+                    <label>Passport Expiry</label>
+                    <input type="date" name="legal.passportExpiry">
+                </div>
+            </div>
+
+            <div class="tab-content" id="email-generator">
+                <h3>Email Generator</h3>
+                <div class="form-group">
+                    <label>Recruiter Name</label>
+                    <input type="text" id="email-recruiter" placeholder="Minakshi">
+                </div>
+                <div class="form-group full-width">
+                    <button type="button" id="generateEmailBtn"
+                        style="width: 100%; background-color: #10b981; margin-bottom: 10px;">✨ Generate Email</button>
+                </div>
+                <div class="form-group full-width">
+                    <label>Generated Email</label>
+                    <textarea id="generated-email-output" rows="15"
+                        placeholder="Click generate to see the email..."></textarea>
+                </div>
+                <div class="form-group full-width">
+                    <button type="button" id="copyEmailBtn" style="width: 100%; background-color: #6b7280;">📋 Copy to
+                        Clipboard</button>
                 </div>
             </div>
 

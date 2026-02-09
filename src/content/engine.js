@@ -301,22 +301,23 @@
                 const storage = await chrome.storage.local.get(['profile', 'profiles', 'activeProfileId', 'isAutoFillEnabled', 'pageSpecificSettings']);
 
                 let currentProfileData = null;
+                let shouldFill = true; // Default to true, disable if settings say so
 
                 // Check if auto-fill is enabled globally
                 if (!force && storage.isAutoFillEnabled !== true) {
-                    console.log("SpeedyApply: Auto-fill disabled globally.");
-                    return;
+                    console.log("SpeedyApply: Auto-fill disabled globally. Scanning for tracking only.");
+                    shouldFill = false;
                 }
 
                 // Check if auto-fill is enabled for this specific page
-                if (!force) {
+                if (!force && shouldFill) {
                     const currentDomain = getDomain();
                     if (currentDomain) {
                         const pageSettings = storage.pageSpecificSettings || {};
                         const pageEnabled = pageSettings[currentDomain] === true; // Default false
                         if (!pageEnabled) {
-                            console.log(`SpeedyApply: Auto-fill disabled for ${currentDomain}.`);
-                            return;
+                            console.log(`SpeedyApply: Auto-fill disabled for ${currentDomain}. Scanning for tracking only.`);
+                            shouldFill = false;
                         }
                     }
                 }
@@ -330,16 +331,15 @@
 
                 if (!currentProfileData) {
                     console.log("SpeedyApply: No active profile found for autofill.");
-                    return;
+                    shouldFill = false;
+                } else {
+                    // Update the global 'profile' variable used by getValueByKey helper
+                    profile = currentProfileData;
                 }
-
-                // Update the global 'profile' variable used by getValueByKey helper
-                profile = currentProfileData;
 
             } catch (error) {
                 if (error.message.includes("Extension context invalidated")) {
                     console.warn("SpeedyApply: Extension context invalidated (likely updated/reloaded). Stopping script.");
-                    // Optional: Disconnect observer if we had a reference, but returning stops this loop.
                     return;
                 }
                 console.error("SpeedyApply: Error accessing storage", error);
@@ -349,6 +349,7 @@
 
             const inputs = this.getAllInputs(document.body);
             let filledCount = 0;
+            let potentialMatches = 0;
 
             console.log(`SpeedyApply: Found ${inputs.length} input elements`);
 
@@ -364,14 +365,15 @@
 
                 // Skip Google Forms "Other:" fields (these are for radio/checkbox "Other" options)
                 if (labelText && (labelText.toLowerCase().includes('other response') || labelText.toLowerCase() === 'other')) {
-                    console.log(`[${index + 1}] SKIPPED "Other" field: name="${input.name}" type="${input.type}" label="${labelText}"`);
+                    // console.log(`[${index + 1}] SKIPPED "Other" field: name="${input.name}" type="${input.type}" label="${labelText}"`);
                     return;
                 }
 
-                // Debug logging
-                console.log(`[${index + 1}] Input: name="${input.name}" type="${input.type}" id="${input.id}" label="${labelText}" -> Matched: ${key || 'NO MATCH'}`);
-
                 if (key) {
+                    potentialMatches++;
+
+                    if (!shouldFill) return; // Skip actual filling if disabled
+
                     // Update count for this key
                     if (!keyCounts[key]) keyCounts[key] = 0;
                     const currentIndex = keyCounts[key];
@@ -379,7 +381,7 @@
 
                     const value = this.getValueByKey(key, currentIndex);
                     if (value) {
-                        console.log(`SpeedyApply: Filling ${key} [index ${currentIndex}] with "${value}"`);
+                        // console.log(`SpeedyApply: Filling ${key} [index ${currentIndex}] with "${value}"`);
 
                         if (input.tagName === 'SELECT') {
                             window.SpeedyInjector.setSelectValue(input, value, key);
@@ -396,15 +398,16 @@
                         input.style.border = "2px solid #22c55e";
                         filledCount++;
                     } else {
-                        console.log(`SpeedyApply: No value found for ${key} [index ${currentIndex}]`);
+                        // console.log(`SpeedyApply: No value found for ${key} [index ${currentIndex}]`);
                     }
                 }
             });
 
-            if (filledCount > 0) {
+            // Log if we filled OR if we found matches (implies it's a job application page)
+            if (filledCount > 0 || potentialMatches > 0) {
                 this.logApplication();
             }
-            console.log(`SpeedyApply: Filled ${filledCount} fields`);
+            console.log(`SpeedyApply: Filled ${filledCount} fields. Potential matches: ${potentialMatches}`);
         },
 
 
@@ -996,6 +999,66 @@
                 document.body.appendChild(container);
                 console.log("SpeedyApply: Pinned popup injected with resize/drag support");
             }
+        },
+
+        minimizePinnedPopup: function () {
+            const container = document.getElementById('speedy-apply-pinned-popup');
+            if (container) {
+                container.style.display = 'none';
+                this.showRestoreButton();
+            }
+        },
+
+        restorePinnedPopup: function () {
+            const container = document.getElementById('speedy-apply-pinned-popup');
+            if (container) {
+                container.style.display = 'flex';
+                this.removeRestoreButton();
+            }
+        },
+
+        showRestoreButton: function () {
+            if (document.getElementById('speedy-apply-restore-btn')) return;
+
+            const container = document.getElementById('speedy-apply-container');
+            if (!container) return; // Should exist
+
+            const restoreBtn = document.createElement('button');
+            restoreBtn.id = 'speedy-apply-restore-btn';
+            restoreBtn.innerText = '🖥️'; // Monitor/Display icon
+            restoreBtn.title = 'Restore Pinned Window';
+            Object.assign(restoreBtn.style, {
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                backgroundColor: '#8b5cf6', // Violet
+                color: 'white',
+                border: 'none',
+                boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                cursor: 'pointer',
+                fontSize: '18px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'transform 0.2s',
+                marginTop: '5px' // Space from other buttons
+            });
+
+            restoreBtn.onmouseover = () => restoreBtn.style.transform = 'scale(1.1)';
+            restoreBtn.onmouseout = () => restoreBtn.style.transform = 'scale(1)';
+
+            restoreBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.restorePinnedPopup();
+            };
+
+            container.insertBefore(restoreBtn, container.lastElementChild);
+        },
+
+        removeRestoreButton: function () {
+            const btn = document.getElementById('speedy-apply-restore-btn');
+            if (btn) btn.remove();
         }
     };
 
@@ -1007,6 +1070,12 @@
             sendResponse({ status: "done" });
         } else if (request.action === "toggle_pin_popup") {
             Engine.togglePinnedPopup(request.tabId);
+            sendResponse({ status: "done" });
+        } else if (request.action === "minimize_popup") {
+            Engine.minimizePinnedPopup();
+            sendResponse({ status: "done" });
+        } else if (request.action === "restore_popup") {
+            Engine.restorePinnedPopup();
             sendResponse({ status: "done" });
         }
     });

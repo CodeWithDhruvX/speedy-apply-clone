@@ -436,6 +436,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 5. Pin/Unpin Logic
     const pinBtn = document.getElementById('pinBtn');
     const unpinBtn = document.getElementById('unpinBtn');
+    const minimizeBtn = document.getElementById('minimizeBtn');
 
     // Check if we are in "pinned" mode
     const urlParams = new URLSearchParams(window.location.search);
@@ -445,10 +446,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (isPinned) {
         if (pinBtn) pinBtn.style.display = 'none';
         if (unpinBtn) unpinBtn.style.display = 'flex';
+        if (minimizeBtn) minimizeBtn.style.display = 'flex';
         document.body.classList.add('pinned-mode');
     } else {
         if (pinBtn) pinBtn.style.display = 'flex';
         if (unpinBtn) unpinBtn.style.display = 'none';
+        if (minimizeBtn) minimizeBtn.style.display = 'none';
     }
 
     if (pinBtn) {
@@ -487,6 +490,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             } else {
                 console.error("SpeedyApply: Could not find active tab to unpin");
+            }
+        });
+    }
+
+    if (minimizeBtn) {
+        minimizeBtn.addEventListener('click', async () => {
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (tab) {
+                chrome.tabs.sendMessage(tab.id, { action: "minimize_popup", tabId: tab.id }, () => {
+                    if (chrome.runtime.lastError) console.error(chrome.runtime.lastError);
+                });
             }
         });
     }
@@ -532,6 +546,151 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.querySelectorAll('.history-item').forEach(item => item.style.display = 'flex');
 
                 // Restore tabs: find active tab and ensure it's visible (though search-mode removal handles this via CSS)
+            }
+        });
+    }
+
+    // 7. Email Generator Logic
+    const generateEmailBtn = document.getElementById('generateEmailBtn');
+    const copyEmailBtn = document.getElementById('copyEmailBtn');
+    const generatedEmailOutput = document.getElementById('generated-email-output');
+    const emailRecruiterInput = document.getElementById('email-recruiter');
+
+    if (generateEmailBtn) {
+        generateEmailBtn.addEventListener('click', () => {
+            // Gather Data from Form Inputs (Visual Source of Truth)
+            const getVal = (name) => {
+                const el = document.querySelector(`[name="${name}"]`);
+                return el ? el.value.trim() : '';
+            };
+            const getValById = (id) => {
+                const el = document.getElementById(id);
+                return el ? el.value.trim() : '';
+            };
+
+            const recruiterName = emailRecruiterInput.value.trim() || '[Recruiter Name]';
+
+            // Personal
+            const firstName = getVal('personal.firstName');
+            const lastName = getVal('personal.lastName');
+            const fullName = `${firstName} ${lastName}`.trim();
+            const dob = getVal('personal.dob'); // YYYY-MM-DD
+            const formattedDob = dob ? new Date(dob).toLocaleDateString('en-GB') : '[DD/MM/YYYY]'; // DD/MM/YYYY
+            const phone = getVal('personal.phone');
+            const email = getVal('personal.email');
+
+            // Address / Loc
+            const city = getVal('personal.city');
+            const state = getVal('personal.state'); // using state as generic location part if needed
+            const currentLocation = city ? (state ? `${city}, ${state}` : city) : getVal('personal.location');
+            const preferredLocation = getVal('preferences.preferredLocation');
+
+            // Legal
+            const passportNum = getVal('legal.passportNumber');
+            const passportExpiry = getVal('legal.passportExpiry');
+            const formattedPassportExpiry = passportExpiry ? new Date(passportExpiry).toLocaleDateString('en-GB') : '';
+            const passportDetails = passportNum ? `${passportNum} (Exp: ${formattedPassportExpiry})` : 'NA';
+
+            // Work / Preferences
+            const totalExp = getVal('preferences.experience');
+            const relevantExp = getVal('preferences.relevantType');
+            const currentCtc = getVal('preferences.currentCtc');
+            const expectedCtc = getVal('preferences.expectedCtc');
+            const noticePeriod = getVal('preferences.noticePeriod');
+            const holdingOffers = getVal('preferences.holdingOffers');
+            const careerGaps = getVal('preferences.careerGaps');
+
+            const currentEmployer = getVal('work.company');
+            const currentDesignation = getVal('work.title');
+
+            // Get Previous Employer from Data Object (since it's not in the main short form)
+            let previousEmployer = 'NA';
+            let highestEducation = '[Degree – University Name]';
+
+            const activeProfile = profiles.find(p => p.id === activeProfileId);
+            if (activeProfile && activeProfile.data) {
+                // Previous Work
+                if (activeProfile.data.work && Array.isArray(activeProfile.data.work) && activeProfile.data.work.length > 1) {
+                    previousEmployer = activeProfile.data.work[1].company || 'NA';
+                }
+
+                // Highest Education
+                if (activeProfile.data.education && Array.isArray(activeProfile.data.education) && activeProfile.data.education.length > 0) {
+                    const edu = activeProfile.data.education[0];
+                    highestEducation = `${edu.degree || 'Degree'} – ${edu.school || 'University'}`;
+                }
+            }
+
+            // Construct Email
+            const emailBody = `Dear ${recruiterName},
+
+Greetings!
+
+Thank you for sharing the company profile and detailed job description. It was a pleasure speaking with you.
+
+As discussed, please find attached my updated resume in Word format along with my relieving letter / LWD confirmation mail for your review.
+
+Please find the requested details below:
+
+**Position applying for:** Fullstack Developer
+
+**Full Name (As per Govt ID):** ${fullName}
+**DOB:** ${formattedDob}
+**Phone:** ${phone}
+**Alternative Contact:** NA
+**Email:** ${email}
+**Alternate Email:** NA
+**Passport Number with Expiry Date:** ${passportDetails}
+
+**Total Years of IT Experience:** ${totalExp || '[X Years]'}
+**Relevant Experience:** ${relevantExp || '[X Years]'}
+
+**Current CTC:** ${currentCtc || '[Amount]'}
+**Expected CTC:** ${expectedCtc || '[Amount]'}
+**Notice Period:** ${noticePeriod || '[Immediate / XX Days]'}
+
+**Holding Any Offers:** ${holdingOffers || 'No'}
+
+**Current Employer:** ${currentEmployer || '[Company Name]'}
+**Previous Organization:** ${previousEmployer}
+**Current Designation:** ${currentDesignation || '[Designation]'}
+**Current Location:** ${currentLocation || '[City]'}
+**Preferred Work Location:** ${preferredLocation || 'Pune'}
+
+**Highest Education with University Name:** ${highestEducation}
+**Any Career or Educational Gaps:** ${careerGaps || 'No'}
+
+Kindly let me know if any additional information or documents are required from my end.
+I look forward to the next steps in the process.
+
+Thank you for your time and consideration.
+
+Warm regards,
+**${fullName}**
+${phone}
+${email}`;
+
+            generatedEmailOutput.value = emailBody;
+
+            // Auto-resize textarea
+            generatedEmailOutput.style.height = 'auto';
+            generatedEmailOutput.style.height = (generatedEmailOutput.scrollHeight) + 'px';
+        });
+    }
+
+    if (copyEmailBtn) {
+        copyEmailBtn.addEventListener('click', () => {
+            const text = generatedEmailOutput.value;
+            if (text) {
+                navigator.clipboard.writeText(text).then(() => {
+                    const originalText = copyEmailBtn.textContent;
+                    copyEmailBtn.textContent = '✅ Copied!';
+                    copyEmailBtn.style.backgroundColor = '#059669';
+                    setTimeout(() => {
+                        copyEmailBtn.textContent = originalText;
+                        copyEmailBtn.style.backgroundColor = '#6b7280';
+                    }, 2000);
+                });
             }
         });
     }

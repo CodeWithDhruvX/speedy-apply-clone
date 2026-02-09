@@ -217,6 +217,10 @@ window.SpeedyDictionary = {
             regex: /sponsorship|visa/i,
             selectors: ['input[name*="sponsorship"]', 'input[name*="visa"]', '[data-automation-id*="sponsorship"]', 'input[name^="entry."]']
         },
+        "legal.panNumber": {
+            regex: /pan\s*card|pan\s*number|permanent\s*account\s*number/i,
+            selectors: ['input[name*="pan"]', '[id*="pan"]', 'input[name*="pancard"]', '[data-automation-id*="pan"]', 'input[name^="entry."][type="text"]']
+        },
         // EEOC / Demographics
         "eeoc.gender": {
             regex: /gender|sex/i,

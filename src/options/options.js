@@ -45,15 +45,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 function setupNavigation() {
     const navDashboard = document.getElementById('nav-dashboard');
     const navProfile = document.getElementById('nav-profile');
+    const navEmail = document.getElementById('nav-email');
     const viewDashboard = document.getElementById('view-dashboard');
     const viewProfile = document.getElementById('view-profile');
+    const viewEmail = document.getElementById('view-email-generator');
 
     navDashboard.addEventListener('click', (e) => {
         e.preventDefault();
         navDashboard.classList.add('active');
         navProfile.classList.remove('active');
+        if (navEmail) navEmail.classList.remove('active');
         viewDashboard.style.display = 'block';
         viewProfile.style.display = 'none';
+        if (viewEmail) viewEmail.style.display = 'none';
         initDashboard(); // Refresh stats
     });
 
@@ -61,10 +65,24 @@ function setupNavigation() {
         e.preventDefault();
         navProfile.classList.add('active');
         navDashboard.classList.remove('active');
+        if (navEmail) navEmail.classList.remove('active');
         viewDashboard.style.display = 'none';
         viewProfile.style.display = 'block';
+        if (viewEmail) viewEmail.style.display = 'none';
         loadProfile(); // Refresh profile data
     });
+
+    if (navEmail) {
+        navEmail.addEventListener('click', (e) => {
+            e.preventDefault();
+            navEmail.classList.add('active');
+            navDashboard.classList.remove('active');
+            navProfile.classList.remove('active');
+            viewDashboard.style.display = 'none';
+            viewProfile.style.display = 'none';
+            if (viewEmail) viewEmail.style.display = 'block';
+        });
+    }
 }
 
 // --- Dashboard Logic ---
@@ -679,6 +697,7 @@ function renderProfileForm() {
     document.getElementById('p-lastName').value = data.personal.lastName || '';
     document.getElementById('p-email').value = data.personal.email || '';
     document.getElementById('p-phone').value = data.personal.phone || '';
+    document.getElementById('p-dob').value = data.personal.dob || ''; // New
     document.getElementById('p-location').value = data.personal.location || '';
 
     // Populate Address
@@ -697,6 +716,10 @@ function renderProfileForm() {
     // Populate Legal & Demographics
     document.getElementById('lg-authorized').value = data.legal.authorized || '';
     document.getElementById('lg-sponsorship').value = data.legal.sponsorship || '';
+    document.getElementById('lg-passportNumber').value = data.legal.passportNumber || ''; // New
+    document.getElementById('lg-passportExpiry').value = data.legal.passportExpiry || ''; // New
+    document.getElementById('lg-panNumber').value = data.legal.panNumber || ''; // New
+
     document.getElementById('de-gender').value = data.eeoc.gender || '';
     document.getElementById('de-race').value = data.eeoc.race || '';
     document.getElementById('de-veteran').value = data.eeoc.veteran || '';
@@ -707,6 +730,10 @@ function renderProfileForm() {
     document.getElementById('pref-currentCtc').value = data.preferences.currentCtc || '';
     document.getElementById('pref-expectedCtc').value = data.preferences.expectedCtc || '';
     document.getElementById('pref-experience').value = data.preferences.experience || '';
+    document.getElementById('pref-relevantType').value = data.preferences.relevantType || ''; // New
+    document.getElementById('pref-preferredLocation').value = data.preferences.preferredLocation || ''; // New
+    document.getElementById('pref-holdingOffers').value = data.preferences.holdingOffers || ''; // New
+    document.getElementById('pref-careerGaps').value = data.preferences.careerGaps || ''; // New
 
     // Populate Profile Extras
     document.getElementById('pr-skills').value = data.profile.skills || '';
@@ -736,8 +763,8 @@ async function saveCurrentProfile() {
             lastName: document.getElementById('p-lastName').value,
             email: document.getElementById('p-email').value,
             phone: document.getElementById('p-phone').value,
+            dob: document.getElementById('p-dob').value, // New
             location: document.getElementById('p-location').value,
-            // New Address Fields
             street: document.getElementById('a-street').value,
             city: document.getElementById('a-city').value,
             state: document.getElementById('a-state').value,
@@ -752,7 +779,10 @@ async function saveCurrentProfile() {
         },
         legal: {
             authorized: document.getElementById('lg-authorized').value,
-            sponsorship: document.getElementById('lg-sponsorship').value
+            sponsorship: document.getElementById('lg-sponsorship').value,
+            passportNumber: document.getElementById('lg-passportNumber').value, // New
+            passportExpiry: document.getElementById('lg-passportExpiry').value, // New
+            panNumber: document.getElementById('lg-panNumber').value // New
         },
         eeoc: {
             gender: document.getElementById('de-gender').value,
@@ -764,7 +794,11 @@ async function saveCurrentProfile() {
             noticePeriod: document.getElementById('pref-noticePeriod').value,
             currentCtc: document.getElementById('pref-currentCtc').value,
             expectedCtc: document.getElementById('pref-expectedCtc').value,
-            experience: document.getElementById('pref-experience').value
+            experience: document.getElementById('pref-experience').value,
+            relevantType: document.getElementById('pref-relevantType').value, // New
+            preferredLocation: document.getElementById('pref-preferredLocation').value, // New
+            holdingOffers: document.getElementById('pref-holdingOffers').value, // New
+            careerGaps: document.getElementById('pref-careerGaps').value // New
         },
         profile: {
             skills: document.getElementById('pr-skills').value,
@@ -1233,3 +1267,148 @@ function mapResumeToProfile(resumeData) {
     };
 }
 
+// 6. Navigation Logic Update
+
+
+// 7. Email Generator Logic (Options Page)
+const generateEmailBtn = document.getElementById('generateEmailBtn');
+const copyEmailBtn = document.getElementById('copyEmailBtn');
+const generatedEmailOutput = document.getElementById('generated-email-output');
+const emailRecruiterInput = document.getElementById('email-recruiter');
+
+if (generateEmailBtn) {
+    generateEmailBtn.addEventListener('click', () => {
+        // Read directly from the Profile Form inputs ensuring we use the latest edited values
+        // regardless of whether they are saved or not.
+        const getVal = (id) => {
+            const el = document.getElementById(id);
+            return el ? el.value.trim() : '';
+        };
+
+        const recruiterName = emailRecruiterInput.value.trim() || '[Recruiter Name]';
+
+        // Personal
+        const firstName = getVal('p-firstName');
+        const lastName = getVal('p-lastName');
+        const fullName = `${firstName} ${lastName}`.trim();
+        const dob = getVal('p-dob');
+        const formattedDob = dob ? new Date(dob).toLocaleDateString('en-GB') : '[DD/MM/YYYY]';
+        const phone = getVal('p-phone');
+        const email = getVal('p-email');
+
+        // Location from Address or General
+        const city = getVal('a-city');
+        const state = getVal('a-state');
+        const currentLocation = city ? (state ? `${city}, ${state}` : city) : getVal('p-location');
+        const preferredLocation = getVal('pref-preferredLocation');
+
+        // Legal
+        const passportNum = getVal('lg-passportNumber');
+        const passportExpiry = getVal('lg-passportExpiry');
+        const formattedPassportExpiry = passportExpiry ? new Date(passportExpiry).toLocaleDateString('en-GB') : '';
+        const passportDetails = passportNum ? `${passportNum} (Exp: ${formattedPassportExpiry})` : 'NA';
+        const panNumber = getVal('lg-panNumber');
+
+        // Preferences
+        const totalExp = getVal('pref-experience');
+        const relevantExp = getVal('pref-relevantType');
+        const currentCtc = getVal('pref-currentCtc');
+        const expectedCtc = getVal('pref-expectedCtc');
+        const noticePeriod = getVal('pref-noticePeriod');
+        const holdingOffers = getVal('pref-holdingOffers');
+        const careerGaps = getVal('pref-careerGaps');
+
+        // Work History (Read from DOM list items)
+        let currentEmployer = '[Company Name]';
+        let currentDesignation = '[Designation]';
+        let previousEmployer = 'NA';
+
+        const workItems = document.querySelectorAll('#work-list .work-item');
+        if (workItems.length > 0) {
+            currentEmployer = workItems[0].querySelector('.work-company').value || '[Company Name]';
+            currentDesignation = workItems[0].querySelector('.work-title').value || '[Designation]';
+
+            if (workItems.length > 1) {
+                previousEmployer = workItems[1].querySelector('.work-company').value || 'NA';
+            }
+        }
+
+        // Education
+        let highestEducation = '[Degree – University Name]';
+        const eduItems = document.querySelectorAll('#education-list .education-item');
+        if (eduItems.length > 0) {
+            const degree = eduItems[0].querySelector('.edu-degree').value || 'Degree';
+            const school = eduItems[0].querySelector('.edu-school').value || 'University';
+            highestEducation = `${degree} – ${school}`;
+        }
+
+        // Construct Email
+        const emailBody = `Dear ${recruiterName},
+
+Greetings!
+
+Thank you for sharing the company profile and detailed job description. It was a pleasure speaking with you.
+
+As discussed, please find attached my updated resume in Word format along with my relieving letter / LWD confirmation mail for your review.
+
+Please find the requested details below:
+
+**Position applying for:** Fullstack Developer
+
+**Full Name (As per Govt ID):** ${fullName}
+**DOB:** ${formattedDob}
+**Phone:** ${phone}
+**Alternative Contact:** NA
+**Email:** ${email}
+**Alternate Email:** NA
+**Passport Number with Expiry Date:** ${passportDetails}
+**PAN Card Number:** ${panNumber || 'NA'}
+
+**Total Years of IT Experience:** ${totalExp || '[X Years]'}
+**Relevant Experience:** ${relevantExp || '[X Years]'}
+
+**Current CTC:** ${currentCtc || '[Amount]'}
+**Expected CTC:** ${expectedCtc || '[Amount]'}
+**Notice Period:** ${noticePeriod || '[Immediate / XX Days]'}
+
+**Holding Any Offers:** ${holdingOffers || 'No'}
+
+**Current Employer:** ${currentEmployer}
+**Previous Organization:** ${previousEmployer}
+**Current Designation:** ${currentDesignation}
+**Current Location:** ${currentLocation || '[City]'}
+**Preferred Work Location:** ${preferredLocation || 'Pune'}
+
+**Highest Education with University Name:** ${highestEducation}
+**Any Career or Educational Gaps:** ${careerGaps || 'No'}
+
+Kindly let me know if any additional information or documents are required from my end.
+I look forward to the next steps in the process.
+
+Thank you for your time and consideration.
+
+Warm regards,
+**${fullName}**
+${phone}
+${email}`;
+
+        generatedEmailOutput.value = emailBody;
+    });
+}
+
+if (copyEmailBtn) {
+    copyEmailBtn.addEventListener('click', () => {
+        const text = generatedEmailOutput.value;
+        if (text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = copyEmailBtn.textContent;
+                copyEmailBtn.textContent = '✅ Copied!';
+                copyEmailBtn.style.backgroundColor = '#059669';
+                setTimeout(() => {
+                    copyEmailBtn.textContent = originalText;
+                    copyEmailBtn.style.backgroundColor = '';
+                }, 2000);
+            });
+        }
+    });
+}
