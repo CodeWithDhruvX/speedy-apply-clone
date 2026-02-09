@@ -205,6 +205,22 @@
             <label>Field of Study</label>
             <input type="text" name="education[major]">
         </div>
+        <div class="form-group">
+            <label>GPA / Grade</label>
+            <input type="text" name="education[gpa]" id="gpa_input">
+        </div>
+        <div class="form-group">
+            <label>Does it have a tricky Select One?</label>
+            <div>
+                <div style="font-weight: bold;">Specific Degree Type <span style="color:red">*</span></div>
+                <br>
+                <select name="degree_type" aria-label="Select One">
+                    <option>Select One</option>
+                    <option>BS</option>
+                    <option>MS</option>
+                </select>
+            </div>
+        </div>
     </div>
 
     <div class="section">
@@ -549,6 +565,44 @@
         <div class="form-group">
             <label>To</label>
             <input type="text" name="work.endDate.workday" data-automation-id="dateSection_endDate">
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>9. Dynamic Education Search (Simulated)</h2>
+        <div class="form-group">
+            <label>University (Search)</label>
+            <div style="position: relative;">
+                <input type="text" id="uni-search" name="education[school_name]" placeholder="Type to search..."
+                    autocomplete="off">
+                <ul id="uni-results"
+                    style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ccc; z-index: 10; padding: 0; margin: 0; list-style: none;">
+                    <li style="padding: 8px; cursor: pointer; border-bottom: 1px solid #eee;">Massachusetts Institute of
+                        Technology (MIT)</li>
+                    <li style="padding: 8px; cursor: pointer; border-bottom: 1px solid #eee;">Harvard University</li>
+                    <li style="padding: 8px; cursor: pointer;">Stanford University</li>
+                </ul>
+            </div>
+            <script>
+                const uniInput = document.getElementById('uni-search');
+                const uniResults = document.getElementById('uni-results');
+
+                uniInput.addEventListener('input', (e) => {
+                    if (e.target.value.length > 0) {
+                        uniResults.style.display = 'block';
+                    } else {
+                        uniResults.style.display = 'none';
+                    }
+                });
+
+                uniResults.querySelectorAll('li').forEach(li => {
+                    li.addEventListener('click', () => {
+                        uniInput.value = li.innerText;
+                        uniResults.style.display = 'none';
+                        console.log("Selected University:", li.innerText);
+                    });
+                });
+            </script>
         </div>
     </div>
 

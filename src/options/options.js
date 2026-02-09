@@ -10,6 +10,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 4. Setup Copy Feature
     setupCopyFeature();
+
+    // 5. Setup Storage Listener for Sync
+    chrome.storage.onChanged.addListener((changes, namespace) => {
+        if (namespace === 'local') {
+            let shouldRender = false;
+
+            if (changes.profiles) {
+                profiles = changes.profiles.newValue || [];
+                shouldRender = true;
+            }
+
+            if (changes.activeProfileId) {
+                activeProfileId = changes.activeProfileId.newValue;
+                shouldRender = true;
+            }
+
+            if (shouldRender) {
+                renderProfileSelector();
+                renderProfileForm();
+
+                // Optional: visual feedback
+                const saveBtn = document.getElementById('saveProfileBtn');
+                if (saveBtn) {
+                    const originalText = saveBtn.textContent;
+                    saveBtn.textContent = 'Syncing...';
+                    setTimeout(() => { saveBtn.textContent = originalText; }, 1000);
+                }
+            }
+        }
+    });
 });
 
 function setupNavigation() {
@@ -231,7 +261,8 @@ function renderTable() {
 
     if (filteredLogs.length === 0) {
         const message = searchQuery ? 'No applications found matching your search.' : 'No applications yet. Start applying!';
-        tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 20px;">${message}</td></tr>`;
+        // colspan increased from 7 to 8
+        tableBody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 20px;">${message}</td></tr>`;
     } else {
         // Get logs for current page (reverse to show newest first)
         const startIndex = (currentPage - 1) * itemsPerPage;
@@ -240,19 +271,14 @@ function renderTable() {
 
         pageData.forEach(log => {
             const row = document.createElement('tr');
-            let displayUrl = log.site;
-            try {
-                const urlObj = new URL(log.site);
-                const path = urlObj.pathname.length > 20 ? urlObj.pathname.substring(0, 20) + '...' : urlObj.pathname;
-                displayUrl = urlObj.origin + path;
-            } catch (e) {
-                if (displayUrl.length > 40) displayUrl = displayUrl.substring(0, 40) + '...';
-            }
+
+            // We don't need displayUrl logic anymore since we hide the text
 
             const isChecked = selectedTimestamps.has(String(log.timestamp));
 
             let companyName = log.company || '';
             let portalName = log.portal;
+            let location = log.location || 'N/A'; // New Location Field
 
             // Fallback for Portal Name if missing (old records)
             if (!portalName) {
@@ -273,11 +299,10 @@ function renderTable() {
                 </td>
                 <td><span class="portal-badge" style="background: #eef2ff; color: #4338ca; padding: 2px 8px; border-radius: 4px; font-size: 0.85em; font-weight: 500;">${portalName}</span></td>
                 <td><strong>${companyName}</strong></td>
+                <td>${location}</td>
                 <td>
-                    <div class="url-cell">
-                        <span title="${log.site}">${displayUrl}</span>
+                    <div class="url-cell" style="justify-content: center;">
                         <button class="open-btn" data-url="${log.site}" title="Open in New Tab">↗️</button>
-                        <button class="copy-btn" data-url="${log.site}" title="Copy URL">📋</button>
                     </div>
                 </td>
                 <td>${log.role || 'N/A'}</td>
@@ -298,17 +323,7 @@ function renderTable() {
             });
         });
 
-        document.querySelectorAll('.copy-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const button = e.currentTarget;
-                const url = button.dataset.url;
-                navigator.clipboard.writeText(url).then(() => {
-                    const original = button.textContent;
-                    button.textContent = '✅';
-                    setTimeout(() => button.textContent = original, 1000);
-                });
-            });
-        });
+        // Removed copy-btn listener as we removed the button
 
         document.querySelectorAll('.delete-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
@@ -768,6 +783,7 @@ async function saveCurrentProfile() {
             school: item.querySelector('.edu-school').value,
             degree: item.querySelector('.edu-degree').value,
             field: item.querySelector('.edu-field').value,
+            grade: item.querySelector('.edu-grade').value, // Save GPA
             startDate: item.querySelector('.edu-start').value,
             endDate: item.querySelector('.edu-end').value
         });
@@ -897,6 +913,10 @@ function addEducationItem(data = {}) {
             <div class="form-group">
                 <label>Field of Study <button class="copy-field-btn" title="Copy value" type="button">📋</button></label>
                 <input type="text" class="form-input edu-field" value="${data.field || ''}">
+            </div>
+            <div class="form-group">
+                <label>GPA / Grade <button class="copy-field-btn" title="Copy value" type="button">📋</button></label>
+                <input type="text" class="form-input edu-grade" value="${data.grade || ''}" placeholder="e.g. 3.8/4.0">
             </div>
             <div class="form-group">
                 <label>Start Date <button class="copy-field-btn" title="Copy value" type="button">📋</button></label>

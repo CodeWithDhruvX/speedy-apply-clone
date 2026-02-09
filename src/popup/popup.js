@@ -194,10 +194,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             work: []
         };
 
-        // Initialize arrays with a single object to hold the form data
-        // The popup currently only supports editing the *first* entry.
-        newProfileData.education = [{}];
-        newProfileData.work = [{}];
+        // Initialize arrays as empty. We only create the first item object
+        // if we actually find form data for it.
+        newProfileData.education = [];
+        newProfileData.work = [];
 
         // Get existing data to preserve unedited fields (like Education/Work arrays)
         // logic: if we have existing arrays, we might want to preserve items 2..n
@@ -221,6 +221,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (section && key) {
                 if (section === 'work' || section === 'education') {
                     // Update the first item in the new data array
+                    if (!newProfileData[section][0]) {
+                        newProfileData[section][0] = {};
+                    }
                     newProfileData[section][0][key] = value.trim();
                 } else {
                     if (!newProfileData[section]) newProfileData[section] = {};
@@ -229,12 +232,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
-        // Merge: Keep the *new* first item, but append existing items 1..n if they exist
-        if (existingEducation.length > 1) {
+        // Merge: Keep the *new* first item, but append existing items 1..n if they exist.
+        // If no new item was created (no form fields), keep existing items entirely.
+        if (newProfileData.education.length > 0) {
             newProfileData.education = [newProfileData.education[0], ...existingEducation.slice(1)];
+        } else {
+            newProfileData.education = existingEducation;
         }
-        if (existingWork.length > 1) {
+
+        if (newProfileData.work.length > 0) {
             newProfileData.work = [newProfileData.work[0], ...existingWork.slice(1)];
+        } else {
+            newProfileData.work = existingWork;
         }
 
         try {
@@ -315,6 +324,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div class="form-group">
                         <label>Field of Study</label>
                         <input type="text" readonly value="${edu.field || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>GPA / Grade</label>
+                        <input type="text" readonly value="${edu.grade || ''}">
                     </div>
                     <div class="form-group">
                         <label>Dates</label>

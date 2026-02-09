@@ -416,9 +416,10 @@
                 const url = window.location.href;
                 // Try to guess role from title?
                 let role = document.title.split('-')[0].split('|')[0].trim().substring(0, 50);
+                if (!role) role = 'N/A';
 
-                // Helper: Clean company name
-                const cleanName = (name) => name ? name.trim().replace(/\s+/g, ' ') : '';
+                // Helper: Clean string
+                const cleanStr = (str) => str ? str.trim().replace(/\s+/g, ' ') : '';
 
                 // Helper: Get Domain / Portal Name
                 const getPortalName = () => {
@@ -437,8 +438,9 @@
                     'Lever', 'Wellfound', 'AngelList', 'App.join'
                 ];
 
-                // Extract Company Name
+                // --- Extract Company & Location ---
                 let company = '';
+                let location = '';
 
                 // 0. Naukri Specific "About company" (Highest Priority)
                 if (url.includes('naukri.com')) {
@@ -463,9 +465,9 @@
                                 const detail = next.querySelector('.detail');
                                 let textVal = '';
                                 if (detail) {
-                                    textVal = cleanName(detail.innerText);
+                                    textVal = cleanStr(detail.innerText);
                                 } else {
-                                    textVal = cleanName(next.innerText);
+                                    textVal = cleanStr(next.innerText);
                                 }
 
                                 // Validation: Don't accept JSON or very long text
@@ -482,12 +484,38 @@
 
                     if (!company) {
                         const naukriSel = document.querySelector('.job-desc-company-info .company-name, .salary-delivery .company-name, a.level-1');
-                        if (naukriSel) company = cleanName(naukriSel.innerText);
+                        if (naukriSel) company = cleanStr(naukriSel.innerText);
+                    }
+
+                    // Naukri Location
+                    // Try multiple common selectors for Naukri
+                    const locSelectors = [
+                        '.loc',
+                        '.location',
+                        '.job-loc',
+                        '[itemprop="jobLocation"]',
+                        '.left-sec .loc',
+                        '.meta-info .loc',
+                        '.job-meta .loc'
+                    ];
+
+                    for (const sel of locSelectors) {
+                        const el = document.querySelector(sel);
+                        if (el) {
+                            location = cleanStr(el.innerText);
+                            if (location) break;
+                        }
+                    }
+
+                    // Naukri Role (if document.title failed)
+                    if (role === 'N/A' || !role || role.includes('SpeedyApply')) {
+                        const roleSel = document.querySelector('h1.job-title, h1.jd-header-title');
+                        if (roleSel) role = cleanStr(roleSel.innerText);
                     }
                 }
 
                 // 1. JSON-LD (High Priority)
-                if (!company) {
+                if (!company || !location) {
                     const scripts = document.querySelectorAll('script[type="application/ld+json"]');
                     for (const script of scripts) {
                         try {
@@ -495,22 +523,35 @@
                             const items = Array.isArray(data) ? data : [data];
 
                             for (const item of items) {
-                                if (item['@type'] === 'JobPosting' && item.hiringOrganization && item.hiringOrganization.name) {
-                                    const extracted = cleanName(item.hiringOrganization.name);
-                                    if (extracted && extracted.toLowerCase() !== 'confidential') {
-                                        if (!extracted.toLowerCase().includes(portal.toLowerCase())) {
-                                            company = extracted;
-                                            break;
+                                if (item['@type'] === 'JobPosting') {
+                                    // Company
+                                    if (!company && item.hiringOrganization && item.hiringOrganization.name) {
+                                        const extracted = cleanStr(item.hiringOrganization.name);
+                                        if (extracted && extracted.toLowerCase() !== 'confidential') {
+                                            if (!extracted.toLowerCase().includes(portal.toLowerCase())) {
+                                                company = extracted;
+                                            }
+                                        }
+                                    }
+                                    // Location
+                                    if (!location && item.jobLocation) {
+                                        if (item.jobLocation.address) {
+                                            const addr = item.jobLocation.address;
+                                            const parts = [];
+                                            if (addr.addressLocality) parts.push(addr.addressLocality);
+                                            if (addr.addressRegion) parts.push(addr.addressRegion);
+                                            if (addr.addressCountry) parts.push(addr.addressCountry);
+                                            location = parts.join(', ');
                                         }
                                     }
                                 }
                             }
-                            if (company) break;
+                            if (company && location) break;
                         } catch (e) { /* ignore */ }
                     }
                 }
 
-                // 2. Platform-Specific Selectors
+                // 2. Platform-Specific Selectors (Company)
                 if (!company) {
                     const selectors = [
                         '.job-desc-company-info .company-name',
@@ -527,29 +568,50 @@
                     for (const sel of selectors) {
                         const el = document.querySelector(sel);
                         if (el) {
-                            company = cleanName(el.innerText);
+                            company = cleanStr(el.innerText);
                             if (company) break;
                         }
                     }
                 }
 
-                // 3. Title Parsing
+                // 3. Platform-Specific Selectors (Location)
+                if (!location) {
+                    const locSelectors = [
+                        '.job-details-jobs-unified-top-card__workplace-type', // LinkedIn
+                        '.jobs-unified-top-card__workplace-type',
+                        '[data-test="job-location"]',
+                        '[data-test-id="location"]',
+                        '.job-location',
+                        '.location'
+                    ];
+
+                    for (const sel of locSelectors) {
+                        const el = document.querySelector(sel);
+                        if (el) {
+                            location = cleanStr(el.innerText);
+                            if (location) break;
+                        }
+                    }
+                }
+
+
+                // 4. Title Parsing
                 if (!company) {
                     const title = document.title;
                     const atMatch = title.match(/\s+at\s+([^|\-]+)/i);
                     const pipeMatch = title.match(/\s+\|\s+([^|\-]+)/);
                     const hyphenMatch = title.match(/\s+-\s+([^|\-]+)/);
 
-                    if (atMatch && atMatch[1]) company = cleanName(atMatch[1]);
-                    else if (pipeMatch && pipeMatch[1]) company = cleanName(pipeMatch[1]);
-                    else if (hyphenMatch && hyphenMatch[1]) company = cleanName(hyphenMatch[1]);
+                    if (atMatch && atMatch[1]) company = cleanStr(atMatch[1]);
+                    else if (pipeMatch && pipeMatch[1]) company = cleanStr(pipeMatch[1]);
+                    else if (hyphenMatch && hyphenMatch[1]) company = cleanStr(hyphenMatch[1]);
                 }
 
-                // 4. Fallback: Meta Tags
+                // 5. Fallback: Meta Tags
                 if (!company) {
                     const siteNameMeta = document.querySelector('meta[property="og:site_name"]');
                     if (siteNameMeta) {
-                        const val = cleanName(siteNameMeta.content);
+                        const val = cleanStr(siteNameMeta.content);
                         if (!KNOWN_PORTALS.some(p => val.toLowerCase().includes(p.toLowerCase()))) {
                             company = val;
                         }
@@ -573,12 +635,13 @@
                         site: url,
                         role: role,
                         company: company || '',
+                        location: location || '',
                         portal: portal,
                         timestamp: Date.now()
                     });
                     await chrome.storage.local.set({ applicationLog: logs });
                     this.hasLogged = true;
-                    console.log(`SpeedyApply: Logged application. Portal: ${portal}, Company: ${company}`);
+                    console.log(`SpeedyApply: Logged application. Portal: ${portal}, Company: ${company}, Location: ${location}`);
                 }
             } catch (error) {
                 // Ignore context invalidated errors here too
@@ -662,26 +725,37 @@
             const parts = key.split('.');
             if (parts.length === 2 && profile[parts[0]]) {
                 const section = profile[parts[0]];
+                const fieldName = parts[1];
 
                 // Handle Arrays (Education, Work)
                 if (Array.isArray(section)) {
                     // Logic: We rely on the order of fields found in the DOM.
                     // If we find 'work.company' for the 1st time, index=0. 2nd time, index=1.
-                    // But we must be careful: if the form asks for Title, then Company, then Title, then Company,
-                    // our simple Global counter for 'work.company' might not align with 'work.title'.
-
-                    // IMPROVEMENT: Use the max index found so far for ANY field in this section? 
-                    // Or keep counters per key?
-                    // Implementation choice: counters per key is the standard "best guess".
 
                     if (index < section.length) {
-                        return section[index][parts[1]];
+                        const item = section[index];
+
+                        // New Fields Logic
+                        if (fieldName === 'grade') {
+                            return item.grade || item.gpa || item.score || null;
+                        }
+
+                        if (fieldName === 'startDate') {
+                            // Helper: format YYYY-MM to Month Year
+                            return item.startDate || null;
+                        }
+
+                        if (fieldName === 'endDate') {
+                            return item.endDate || null;
+                        }
+
+                        return item[fieldName];
                     }
-                    return null; // Out of bounds (e.g. form has 5 slots, user has 2 jobs)
+                    return null;
                 }
 
                 // Handle Objects (Personal, Links)
-                return section[parts[1]];
+                return section[fieldName];
             }
             return null;
         },

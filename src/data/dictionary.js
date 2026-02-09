@@ -89,15 +89,72 @@ window.SpeedyDictionary = {
         // Education
         "education.school": {
             regex: /school|university|college|institution|board/i,
-            selectors: ['input[name*="school"]', 'input[name*="university"]', 'input[name*="college"]', '[id*="education"]', 'input[name="education[school_name]"]', 'input[name^="entry."][type="text"]', '[data-automation-id="educationSection_school"]', '[data-automation-id="school"]'] // Added Greenhouse, Google Forms, Workday
+            selectors: [
+                'input[name*="school"]',
+                'input[name*="university"]',
+                'input[name*="college"]',
+                'input[id*="school"]',
+                'input[id*="university"]',
+                'input[name="education[school_name]"]',
+                'input[name^="entry."][type="text"]',
+                '[data-automation-id="educationSection_school"]',
+                '[data-automation-id="school"]'
+            ]
         },
         "education.degree": {
             regex: /degree|qualification|certification/i,
-            selectors: ['input[name*="degree"]', 'select[name*="degree"]', 'input[name="education[degree]"]', 'input[name^="entry."][type="text"]', '[data-automation-id="educationSection_degree"]', '[data-automation-id="degree"]'] // Added Greenhouse, Google Forms, Workday
+            selectors: [
+                'input[name*="degree"]',
+                'select[name*="degree"]',
+                'input[name="education[degree]"]',
+                'input[name^="entry."][type="text"]',
+                '[data-automation-id="educationSection_degree"]',
+                '[data-automation-id="degree"]',
+                '[id*="degree"]'
+            ]
         },
         "education.field": {
             regex: /major|field\s*of\s*study|specialization/i,
-            selectors: ['input[name*="major"]', 'input[name*="field"]', 'input[name="education[discipline]"]', 'input[name^="entry."][type="text"]', '[data-automation-id="educationSection_fieldOfStudy"]', '[data-automation-id="fieldOfStudy"]'] // Added Greenhouse, Google Forms, Workday
+            selectors: [
+                'input[name*="major"]',
+                'input[name*="field"]',
+                'input[name="education[discipline]"]',
+                'input[name^="entry."][type="text"]',
+                '[data-automation-id="educationSection_fieldOfStudy"]',
+                '[data-automation-id="fieldOfStudy"]',
+                '[id*="fieldOfStudy"]',
+                '[id*="major"]'
+            ]
+        },
+        "education.grade": {
+            regex: /grade|gpa|cgpa|score|percentage|result/i,
+            selectors: [
+                'input[name*="gpa"]',
+                'input[name*="grade"]',
+                'input[name*="score"]',
+                'input[name*="percentage"]',
+                'input[name="education[gpa]"]',
+                '[data-automation-id="educationSection_gpa"]',
+                '[data-automation-id="gpa"]'
+            ]
+        },
+        "education.startDate": {
+            regex: /start\s*date|from/i,
+            selectors: [
+                'input[name*="start"]',
+                'select[name*="start"]',
+                'input[name*="from"]',
+                '[name*="education"][name*="start"]'
+            ]
+        },
+        "education.endDate": {
+            regex: /end\s*date|to|graduation\s*date/i,
+            selectors: [
+                'input[name*="end"]',
+                'select[name*="end"]',
+                'input[name*="to"]',
+                '[name*="education"][name*="end"]'
+            ]
         },
         // Work
         "work.company": {
