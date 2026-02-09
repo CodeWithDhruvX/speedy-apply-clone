@@ -793,6 +793,7 @@ async function saveCurrentProfile() {
         newData.work.push({
             company: item.querySelector('.work-company').value,
             title: item.querySelector('.work-title').value,
+            location: item.querySelector('.work-location').value, // Save Location
             startDate: item.querySelector('.work-start').value,
             endDate: item.querySelector('.work-end').value,
             description: item.querySelector('.work-desc').value
@@ -950,6 +951,10 @@ function addWorkItem(data = {}) {
             <div class="form-group">
                 <label>Job Title <button class="copy-field-btn" title="Copy value" type="button">📋</button></label>
                 <input type="text" class="form-input work-title" value="${data.title || ''}">
+            </div>
+            <div class="form-group">
+                <label>Location <button class="copy-field-btn" title="Copy value" type="button">📋</button></label>
+                <input type="text" class="form-input work-location" value="${data.location || ''}" placeholder="e.g. New York, NY">
             </div>
             <div class="form-group">
                 <label>Start Date <button class="copy-field-btn" title="Copy value" type="button">📋</button></label>
@@ -1220,6 +1225,7 @@ function mapResumeToProfile(resumeData) {
         work: resumeData.workHistory.map(work => ({
             company: work.company || '',
             title: work.title || '',
+            location: work.location || '',
             startDate: work.startDate || '',
             endDate: work.endDate || '',
             description: work.description || ''

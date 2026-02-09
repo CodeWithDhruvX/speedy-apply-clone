@@ -197,8 +197,12 @@ window.SpeedyDictionary = {
             selectors: ['input[name*="start"]', 'select[name*="start"]', 'input[name*="from"]', 'select[name*="from"]', 'input[name="job_application[employment][][start_date]"]', 'input[name^="entry."][type="date"]', 'input[name^="entry."][type="text"]', '[data-automation-id="jobHistorySection_startDate"]', '[data-automation-id="startDate"]'] // Added Greenhouse, Google Forms, Workday
         },
         "work.endDate": {
-            regex: /end\s*date|to/i,
+            regex: /end\s*date|to|graduation\s*date/i,
             selectors: ['input[name*="end"]', 'select[name*="end"]', 'input[name*="to"]', 'select[name*="to"]', 'input[name="job_application[employment][][end_date]"]', 'input[name^="entry."][type="date"]', 'input[name^="entry."][type="text"]', '[data-automation-id="jobHistorySection_endDate"]', '[data-automation-id="endDate"]'] // Added Greenhouse, Google Forms, Workday
+        },
+        "work.location": {
+            regex: /location|city|work\s*location/i,
+            selectors: ['input[name*="location"]', 'input[name*="city"]', 'input[name*="work_location"]', '[data-automation-id="jobHistorySection_location"]', '[data-automation-id="location"]', 'input[name^="entry."][type="text"]']
         },
         "work.description": {
             regex: /role\s*description|description|responsibilities|duties/i,
