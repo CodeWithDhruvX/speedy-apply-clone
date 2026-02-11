@@ -11,6 +11,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         checkOllamaStatus(sendResponse);
         return true;
     }
+
+    if (request.action === 'CAPTURE_VISIBLE_TAB') {
+        chrome.tabs.captureVisibleTab(null, { format: 'png' }, (dataUrl) => {
+            if (chrome.runtime.lastError) {
+                sendResponse({ success: false, error: chrome.runtime.lastError.message });
+            } else {
+                sendResponse({ success: true, dataUrl: dataUrl });
+            }
+        });
+        return true; // Keep channel open
+    }
 });
 
 async function handleOllamaRequest(request, sendResponse) {

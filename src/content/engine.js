@@ -270,6 +270,36 @@
             // Append
             container.appendChild(toggleBtn);
             container.appendChild(fillBtn);
+
+            // 3. Screenshot Button
+            const screenshotBtn = document.createElement('button');
+            screenshotBtn.id = 'speedy-apply-screenshot-btn';
+            screenshotBtn.innerText = '📷';
+            screenshotBtn.title = 'SpeedyApply: Full Page Screenshot';
+            Object.assign(screenshotBtn.style, {
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                backgroundColor: '#f3f4f6',
+                color: '#374151',
+                border: '1px solid #d1d5db',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                cursor: 'pointer',
+                fontSize: '18px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s',
+                marginTop: '5px' // Add some spacing
+            });
+
+            screenshotBtn.onclick = async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                await this.captureFullPage(screenshotBtn);
+            };
+
+            container.appendChild(screenshotBtn);
             document.body.appendChild(container);
 
             // Initialize Toggle States
@@ -771,6 +801,89 @@
             }
             input.dataset.speedyFilled = "true";
             input.style.border = "2px solid #22c55e";
+        },
+
+        captureFullPage: async function (btn) {
+            const originalText = btn.innerText;
+            btn.innerText = '⏳'; // Loading state
+
+            // 1. Prepare for scroll
+            const originalScrollPos = window.scrollY;
+            const originalOverflow = document.body.style.overflow;
+            document.body.style.overflow = 'hidden'; // Hide scrollbars during capture
+
+            const fullHeight = document.documentElement.scrollHeight;
+            const viewportHeight = window.innerHeight;
+            const totalScrolls = Math.ceil(fullHeight / viewportHeight);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = window.innerWidth;
+            canvas.height = fullHeight;
+            const ctx = canvas.getContext('2d');
+
+            try {
+                // 2. Scroll and Capture Loop
+                for (let i = 0; i < totalScrolls; i++) {
+                    const scrollY = i * viewportHeight;
+                    window.scrollTo(0, scrollY);
+
+                    // Wait for render/scroll settle
+                    await new Promise(r => setTimeout(r, 250));
+
+                    // Capture visible tab via Background
+                    const dataUrl = await new Promise((resolve) => {
+                        chrome.runtime.sendMessage({ action: 'CAPTURE_VISIBLE_TAB' }, (response) => {
+                            if (response && response.success) resolve(response.dataUrl);
+                            else resolve(null);
+                        });
+                    });
+
+                    if (dataUrl) {
+                        const img = new Image();
+                        img.src = dataUrl;
+                        await new Promise(r => img.onload = r);
+
+                        // Draw to canvas at correct offset
+                        // Note: capturing visible tab captures the viewport. 
+                        // We need to account for the last scroll which might overlap
+                        let drawHeight = viewportHeight;
+                        if (i === totalScrolls - 1) {
+                            // Last scroll
+                            // Logic: The last screenshot might have some overlap if we just scrolled to bottom
+                            // But simplified: stick rest at bottom.
+                        }
+
+                        ctx.drawImage(img, 0, 0, window.innerWidth, viewportHeight, 0, scrollY, window.innerWidth, viewportHeight);
+                    }
+                }
+
+                // 3. Convert Canvas to Blob and Copy
+                canvas.toBlob(async (blob) => {
+                    if (!blob) {
+                        console.error("SpeedyApply: Failed to create blob from canvas");
+                        btn.innerText = '❌';
+                        return;
+                    }
+                    try {
+                        const item = new ClipboardItem({ "image/png": blob });
+                        await navigator.clipboard.write([item]);
+                        console.log("SpeedyApply: Screenshot copied to clipboard!");
+                        btn.innerText = '✅';
+                    } catch (err) {
+                        console.error("SpeedyApply: Clipboard write failed", err);
+                        btn.innerText = '❌';
+                    }
+                }, 'image/png');
+
+            } catch (e) {
+                console.error("SpeedyApply: Screenshot failed", e);
+                btn.innerText = '❌';
+            } finally {
+                // 4. Cleanup
+                window.scrollTo(0, originalScrollPos);
+                document.body.style.overflow = originalOverflow;
+                setTimeout(() => btn.innerText = originalText, 2000);
+            }
         },
 
         attemptAIFill: async function (input) {
