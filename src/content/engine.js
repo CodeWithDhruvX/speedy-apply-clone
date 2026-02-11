@@ -135,6 +135,74 @@
                 alignItems: 'center'
             });
 
+            // --- Draggable Handle ---
+            const dragHandle = document.createElement('div');
+            dragHandle.id = 'speedy-apply-drag-handle';
+            // Use a grip icon (unicode)
+            dragHandle.innerText = '⠿';
+            dragHandle.title = 'Drag to move';
+            Object.assign(dragHandle.style, {
+                fontSize: '20px',
+                color: '#9ca3af', // gray-400
+                cursor: 'grab',
+                userSelect: 'none',
+                lineHeight: '1',
+                marginBottom: '5px',
+                textAlign: 'center',
+                width: '100%',
+                display: 'flex',
+                justifyContent: 'center'
+            });
+
+            // Add Drag Logic
+            let isDragging = false;
+            let dragStartX, dragStartY;
+            let initialDragLeft, initialDragTop;
+
+            const onDragStart = (e) => {
+                e.preventDefault(); // Prevent text selection
+                isDragging = true;
+                dragHandle.style.cursor = 'grabbing';
+
+                const rect = container.getBoundingClientRect();
+
+                // Switch to fixed top/left if not already
+                // This ensures smooth dragging from any position
+                container.style.bottom = 'auto';
+                container.style.right = 'auto';
+                container.style.left = rect.left + 'px';
+                container.style.top = rect.top + 'px';
+
+                dragStartX = e.clientX;
+                dragStartY = e.clientY;
+                initialDragLeft = rect.left;
+                initialDragTop = rect.top;
+
+                document.addEventListener('mousemove', onDragMove);
+                document.addEventListener('mouseup', onDragEnd);
+            };
+
+            const onDragMove = (e) => {
+                if (!isDragging) return;
+
+                const dx = e.clientX - dragStartX;
+                const dy = e.clientY - dragStartY;
+
+                // updates position
+                container.style.left = (initialDragLeft + dx) + 'px';
+                container.style.top = (initialDragTop + dy) + 'px';
+            };
+
+            const onDragEnd = () => {
+                isDragging = false;
+                dragHandle.style.cursor = 'grab';
+                document.removeEventListener('mousemove', onDragMove);
+                document.removeEventListener('mouseup', onDragEnd);
+            };
+
+            dragHandle.addEventListener('mousedown', onDragStart);
+            container.appendChild(dragHandle);
+
             // Get current domain for page-specific toggle
             const currentDomain = getDomain();
             const initialStorage = await chrome.storage.local.get(['isAutoFillEnabled', 'pageSpecificSettings']);

@@ -593,6 +593,15 @@ function initProfile() {
     document.getElementById('importResumeBtn').addEventListener('click', importResume);
     document.getElementById('importResumeInput').addEventListener('change', handleResumeImport);
 
+    // Full System Backup & Restore
+    const exportAllBtn = document.getElementById('exportAllDataBtn');
+    const restoreAllBtn = document.getElementById('restoreAllDataBtn');
+    const restoreAllInput = document.getElementById('restoreAllDataInput');
+
+    if (exportAllBtn) exportAllBtn.addEventListener('click', exportAllData);
+    if (restoreAllBtn) restoreAllBtn.addEventListener('click', restoreAllData);
+    if (restoreAllInput) restoreAllInput.addEventListener('change', handleFullRestore);
+
     selector.addEventListener('change', (e) => switchProfile(e.target.value));
 
     document.getElementById('addEducationBtn').addEventListener('click', () => addEducationItem());
@@ -1291,6 +1300,94 @@ async function handleResumeImport(event) {
 
     // Reset input
     event.target.value = '';
+}
+
+// --- Full System Backup & Restore Logic ---
+
+function exportAllData() {
+    chrome.storage.local.get(null, (items) => {
+        // 'items' contains everything in local storage
+        const exportData = {
+            meta: {
+                version: "1.0",
+                type: "full_backup",
+                timestamp: new Date().toISOString(),
+                userAgent: navigator.userAgent
+            },
+            data: items
+        };
+
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+        const downloadAnchorNode = document.createElement('a');
+
+        const dateStr = new Date().toISOString().split('T')[0];
+        const fileName = `SpeedyApply_FullBackup_${dateStr}.json`;
+
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", fileName);
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+
+        // Feedback
+        const btn = document.getElementById('exportAllDataBtn');
+        if (btn) {
+            const originalText = btn.innerHTML;
+            btn.textContent = '✅ Backup Downloaded!';
+            btn.style.backgroundColor = '#22c55e';
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.style.backgroundColor = '#4f46e5';
+            }, 2000);
+        }
+    });
+}
+
+function restoreAllData() {
+    const input = document.getElementById('restoreAllDataInput');
+    if (input) input.click();
+}
+
+function handleFullRestore(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!confirm("WARNING: This will OVERWRITE all your current profiles and settings with the backup data.\n\nAre you sure you want to proceed?")) {
+        event.target.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const json = JSON.parse(e.target.result);
+
+            // Validation
+            if (!json.meta || json.meta.type !== 'full_backup' || !json.data) {
+                if (!confirm("This file doesn't look like a valid Full Backup (missing metadata). Try to restore anyway?")) {
+                    return;
+                }
+            }
+
+            const dataToRestore = json.data || json; // Fallback for raw dumps
+
+            // Restore to Chrome Storage
+            await chrome.storage.local.clear();
+            await chrome.storage.local.set(dataToRestore);
+
+            // Refresh UI
+            alert("Backup restored successfully! The page will now reload.");
+            window.location.reload();
+
+        } catch (error) {
+            console.error(error);
+            alert("Error parsing backup file. Please ensure it is a valid JSON.");
+        }
+
+        // Reset input
+        event.target.value = '';
+    };
+    reader.readAsText(file);
 }
 
 /**

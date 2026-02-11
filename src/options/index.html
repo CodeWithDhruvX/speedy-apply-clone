@@ -127,17 +127,40 @@
                     <div class="divider"
                         style="display:inline-block; width: 1px; height: 20px; background: #444; margin: 0 10px; vertical-align: middle;">
                     </div>
-                    <button id="exportProfileBtn" class="secondary-btn" title="Export Profile to JSON">⬇️
-                        Export</button>
+                    <!-- Individual Profile Actions -->
+                    <button id="exportProfileBtn" class="secondary-btn" title="Export CURRENT Profile to JSON">⬇️
+                        Profile</button>
                     <button id="importProfileBtn" class="secondary-btn" title="Import Profile from JSON">⬆️
-                        Import</button>
+                        Profile</button>
                     <button id="importResumeBtn" class="secondary-btn" title="Import Profile from Resume">📄
-                        Import from Resume</button>
+                        Resume</button>
                     <input type="file" id="importFileInput" accept=".json" style="display: none;">
                     <input type="file" id="importResumeInput" accept=".zip,.tex" multiple style="display: none;">
+
                     <button id="saveProfileBtn" class="primary-btn" style="margin-left: 10px;">Save Profile</button>
                 </div>
             </header>
+
+            <!-- Data Management Section -->
+            <div class="card" style="border-left: 4px solid #6366f1; background: #1e1e2e;">
+                <div class="card-header">
+                    <h3>💾 Full System Backup & Restore</h3>
+                    <div style="display: flex; gap: 10px;">
+                        <button id="exportAllDataBtn" class="primary-btn" style="background-color: #4f46e5;"
+                            title="Backup EVERYTHING (Profiles, History, Settings)">
+                            ⬇️ Download Full Backup
+                        </button>
+                        <button id="restoreAllDataBtn" class="secondary-btn" title="Restore from Full Backup File">
+                            ⬆️ Restore Backup
+                        </button>
+                        <input type="file" id="restoreAllDataInput" accept=".json" style="display: none;">
+                    </div>
+                </div>
+                <p style="color: #9ca3af; font-size: 0.9em; margin-top: 5px;">
+                    <strong>Important:</strong> Chrome extensions delete all data when uninstalled. Download a Full
+                    Backup regularly to save your data.
+                </p>
+            </div>
 
             <div class="card">
                 <h3>Personal Information</h3>
@@ -453,7 +476,8 @@
                     <input type="text" id="setting-ollama-model" class="form-input" placeholder="e.g. qwen2.5-coder:3b"
                         value="qwen2.5-coder:3b">
                     <p style="font-size: 0.8em; color: #6b7280; margin-top: 5px;">Make sure you have pulled this model:
-                        <code>ollama pull qwen2.5-coder:3b</code></p>
+                        <code>ollama pull qwen2.5-coder:3b</code>
+                    </p>
                 </div>
 
                 <div class="form-group full-width"
