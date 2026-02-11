@@ -11,6 +11,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 4. Setup Copy Feature
     setupCopyFeature();
 
+    // 5. Initialize Settings
+    initSettings();
+
     // 5. Setup Storage Listener for Sync
     chrome.storage.onChanged.addListener((changes, namespace) => {
         if (namespace === 'local') {
@@ -49,6 +52,8 @@ function setupNavigation() {
     const viewDashboard = document.getElementById('view-dashboard');
     const viewProfile = document.getElementById('view-profile');
     const viewEmail = document.getElementById('view-email-generator');
+    const navSettings = document.getElementById('nav-settings');
+    const viewSettings = document.getElementById('view-settings');
 
     navDashboard.addEventListener('click', (e) => {
         e.preventDefault();
@@ -58,6 +63,8 @@ function setupNavigation() {
         viewDashboard.style.display = 'block';
         viewProfile.style.display = 'none';
         if (viewEmail) viewEmail.style.display = 'none';
+        if (viewSettings) viewSettings.style.display = 'none';
+        if (navSettings) navSettings.classList.remove('active');
         initDashboard(); // Refresh stats
     });
 
@@ -69,6 +76,8 @@ function setupNavigation() {
         viewDashboard.style.display = 'none';
         viewProfile.style.display = 'block';
         if (viewEmail) viewEmail.style.display = 'none';
+        if (viewSettings) viewSettings.style.display = 'none';
+        if (navSettings) navSettings.classList.remove('active');
         loadProfile(); // Refresh profile data
     });
 
@@ -81,6 +90,23 @@ function setupNavigation() {
             viewDashboard.style.display = 'none';
             viewProfile.style.display = 'none';
             if (viewEmail) viewEmail.style.display = 'block';
+            if (viewSettings) viewSettings.style.display = 'none';
+            if (navSettings) navSettings.classList.remove('active');
+        });
+    }
+
+    if (navSettings) {
+        navSettings.addEventListener('click', (e) => {
+            e.preventDefault();
+            navSettings.classList.add('active');
+            navDashboard.classList.remove('active');
+            navProfile.classList.remove('active');
+            if (navEmail) navEmail.classList.remove('active');
+
+            viewDashboard.style.display = 'none';
+            viewProfile.style.display = 'none';
+            if (viewEmail) viewEmail.style.display = 'none';
+            if (viewSettings) viewSettings.style.display = 'block';
         });
     }
 }
@@ -624,7 +650,7 @@ async function loadProfile() {
 
     // 1. Migration: Single Profile -> Multiple Profiles
     if (data.profile && !data.profiles) {
-        console.log("Migrating single profile to multiple...");
+
         const defaultProfile = {
             id: 'default-' + Date.now(),
             name: 'Default Profile',
@@ -750,6 +776,73 @@ function renderProfileForm() {
     const workList = document.getElementById('work-list');
     workList.innerHTML = '';
     data.work.forEach(work => addWorkItem(work));
+}
+
+// --- Settings Logic ---
+async function initSettings() {
+    const aiToggle = document.getElementById('setting-ai-enabled');
+    const aiStatus = document.getElementById('ai-status-indicator');
+    const modelInput = document.getElementById('setting-ollama-model');
+    const container = document.getElementById('ollama-settings-container');
+    const checkBtn = document.getElementById('check-ollama-btn');
+
+    if (!aiToggle) return;
+
+    // Load saved state
+    const storage = await chrome.storage.local.get(['useOllama', 'ollamaModel']);
+
+    // Default model if not set
+    if (!storage.ollamaModel) {
+        chrome.storage.local.set({ ollamaModel: 'qwen2.5-coder:3b' });
+    }
+
+    aiToggle.checked = storage.useOllama === true;
+    container.style.display = aiToggle.checked ? 'block' : 'none';
+    if (storage.ollamaModel) modelInput.value = storage.ollamaModel;
+
+    // Save state on change
+    aiToggle.addEventListener('change', (e) => {
+        const isChecked = e.target.checked;
+        chrome.storage.local.set({ useOllama: isChecked });
+        container.style.display = isChecked ? 'block' : 'none';
+        if (isChecked) checkOllamaStatus();
+    });
+
+    modelInput.addEventListener('change', (e) => {
+        chrome.storage.local.set({ ollamaModel: e.target.value.trim() });
+    });
+
+    checkBtn.addEventListener('click', () => {
+        aiStatus.textContent = "Checking...";
+        aiStatus.style.color = "#6b7280";
+        checkOllamaStatus();
+    });
+
+    // Check availability
+    if (aiToggle.checked) checkOllamaStatus();
+}
+
+async function checkOllamaStatus() {
+    const aiStatus = document.getElementById('ai-status-indicator');
+    if (!aiStatus) return;
+
+    chrome.runtime.sendMessage({ action: 'CHECK_OLLAMA_STATUS' }, (response) => {
+        if (chrome.runtime.lastError) {
+            aiStatus.textContent = "❌ Background Script Error";
+            aiStatus.style.color = "#ef4444";
+            return;
+        }
+
+        if (response && response.success) {
+            console.log("SpeedyApply Options: Ollama connected successfully.");
+            aiStatus.textContent = "✅ Connected to Ollama";
+            aiStatus.style.color = "#22c55e";
+        } else {
+            console.error("SpeedyApply Options: Ollama connection failed.");
+            aiStatus.textContent = "❌ Unreachable (Is Ollama running?)";
+            aiStatus.style.color = "#ef4444";
+        }
+    });
 }
 
 async function saveCurrentProfile() {
@@ -1102,7 +1195,7 @@ function handleFileImport(event) {
             alert("Profile imported successfully!");
 
         } catch (error) {
-            console.error(error);
+
             alert("Error parsing JSON file. Please ensure it is a valid JSON.");
         }
 
@@ -1184,7 +1277,7 @@ async function handleResumeImport(event) {
         }
 
     } catch (error) {
-        console.error('Resume import error:', error);
+
         alert(`Error importing resume: ${error.message}\n\nPlease ensure you uploaded a valid LaTeX resume file (.tex) or ZIP archive.`);
 
         // Reset button

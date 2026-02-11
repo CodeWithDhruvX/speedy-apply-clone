@@ -115,22 +115,22 @@
                         resultDiv.innerHTML = `<span class="test-name">${testName}</span><span class="test-result pass">PASS</span>`;
                         passedTests++;
                     } catch (e) {
-                        console.error(e);
+                        ^\s * console\..*;?.error(e);
                         resultDiv.innerHTML = `<span class="test-name">${testName}</span><span class="test-result fail">FAIL</span>`;
-                        const errorMsg = document.createElement('div');
-                        errorMsg.style.fontSize = '0.8em';
-                        errorMsg.style.color = '#dc2626';
-                        errorMsg.style.padding = '0 15px 5px';
-                        errorMsg.innerText = e.message;
-                        groupDiv.appendChild(resultDiv);
-                        groupDiv.appendChild(errorMsg);
-                        return;
-                    }
-                    groupDiv.appendChild(resultDiv);
-                }
+                const errorMsg = document.createElement('div');
+                errorMsg.style.fontSize = '0.8em';
+                errorMsg.style.color = '#dc2626';
+                errorMsg.style.padding = '0 15px 5px';
+                errorMsg.innerText = e.message;
+                groupDiv.appendChild(resultDiv);
+                groupDiv.appendChild(errorMsg);
+                return;
+            }
+            groupDiv.appendChild(resultDiv);
+        }
             };
 
-            fn(ctx);
+        fn(ctx);
         }
 
         function expect(actual) {

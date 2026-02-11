@@ -17,6 +17,7 @@
             <a href="#" id="nav-dashboard" class="active">Dashboard</a>
             <a href="#" id="nav-profile">Profile</a>
             <a href="#" id="nav-email">Email Generator</a>
+            <a href="#" id="nav-settings">Settings</a>
         </nav>
     </div>
 
@@ -418,6 +419,49 @@
                         <button id="copyEmailBtn" class="secondary-btn" style="width: 200px;">📋 Copy to
                             Clipboard</button>
                     </div>
+                </div>
+            </div>
+        </div>
+        <!-- Settings View -->
+        <div id="view-settings" style="display: none;">
+            <header>
+                <h1>Settings</h1>
+                <p style="color: #9ca3af; margin-top: 5px;">Configure global extension behavior.</p>
+            </header>
+
+            <div class="card">
+                <h3>Local AI (Ollama)</h3>
+                <div class="form-group full-width">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <label style="margin-bottom: 5px; display: block;">Enable Local AI (Ollama)</label>
+                            <span style="font-size: 0.85em; color: #6b7280;">
+                                Connects to <code>http://localhost:11434</code>.
+                                <br>Requires Ollama running locally. No API Key required.
+                            </span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="setting-ai-enabled">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group full-width" id="ollama-settings-container"
+                    style="display: none; margin-top: 15px;">
+                    <label>Model Name</label>
+                    <input type="text" id="setting-ollama-model" class="form-input" placeholder="e.g. qwen2.5-coder:3b"
+                        value="qwen2.5-coder:3b">
+                    <p style="font-size: 0.8em; color: #6b7280; margin-top: 5px;">Make sure you have pulled this model:
+                        <code>ollama pull qwen2.5-coder:3b</code></p>
+                </div>
+
+                <div class="form-group full-width"
+                    style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #374151;">
+                    <label>Status:</label>
+                    <span id="ai-status-indicator" style="margin-left: 10px; font-weight: 500;">Checking...</span>
+                    <button id="check-ollama-btn" class="secondary-btn"
+                        style="float: right; padding: 2px 8px; font-size: 0.8em;">Check Connection</button>
                 </div>
             </div>
         </div>

@@ -599,7 +599,7 @@
                     li.addEventListener('click', () => {
                         uniInput.value = li.innerText;
                         uniResults.style.display = 'none';
-                        console.log("Selected University:", li.innerText);
+                        ^\s * console\..*;?.log("Selected University:", li.innerText);
                     });
                 });
             </script>
@@ -609,12 +609,12 @@
     <script>
         document.getElementById('trigger-fill').addEventListener('click', () => {
             if (window.postMessageMock) {
-                console.log("Btn Click: Triggering Mock Message");
+                ^\s * console\..*;?.log("Btn Click: Triggering Mock Message");
                 window.postMessageMock({ action: "fill" }, {}, (response) => {
-                    console.log("Mock Response:", response);
+                    ^\s * console\..*;?.log("Mock Response:", response);
                 });
             } else {
-                console.warn("Mock Message Listener not registered yet!");
+                ^\s * console\..*;?.warn("Mock Message Listener not registered yet!");
             }
         });
 
@@ -689,46 +689,78 @@
             storage: {
                 local: {
                     get: (keys) => {
-                        console.log("Mock Storage: Getting", keys);
+                        ^\s * console\..*;?.log("Mock Storage: Getting", keys);
                         // If keys is string, array, or null/undefined
-                        if (!keys) return Promise.resolve(mockStorageData);
-                        if (typeof keys === 'string') keys = [keys];
-                        if (Array.isArray(keys)) {
-                            const result = {};
-                            keys.forEach(k => result[k] = mockStorageData[k]);
-                            return Promise.resolve(result);
-                        }
-                        return Promise.resolve(mockStorageData);
+                        if(!keys) return Promise.resolve(mockStorageData);
+                    if(typeof keys === 'string') keys =[keys];
+                if(Array.isArray(keys)) {
+            const result = {};
+            keys.forEach(k => result[k] = mockStorageData[k]);
+            return Promise.resolve(result);
+        }
+        return Promise.resolve(mockStorageData);
                     },
-                    set: (data) => {
-                        console.log("Mock Storage: Setting", data);
-                        const changes = {};
-                        for (const key in data) {
-                            const oldValue = mockStorageData[key];
-                            const newValue = data[key];
-                            mockStorageData[key] = newValue;
-                            changes[key] = { oldValue, newValue };
-                        }
-                        // Trigger listeners
-                        storageListeners.forEach(cb => cb(changes, 'local'));
-                        return Promise.resolve();
-                    }
+        set: (data) => {
+                        ^\s * console\..*;?.log("Mock Storage: Setting", data);
+            const changes = {};
+            for (const key in data) {
+                const oldValue = mockStorageData[key];
+                const newValue = data[key];
+                mockStorageData[key] = newValue;
+                changes[key] = { oldValue, newValue };
+            }
+            // Trigger listeners
+            storageListeners.forEach(cb => cb(changes, 'local'));
+            return Promise.resolve();
+        }
                 },
-                onChanged: {
-                    addListener: (cb) => {
-                        console.log("Mock Storage: Listener added");
-                        storageListeners.push(cb);
-                    }
+        onChanged: {
+            addListener: (cb) => {
+                        ^\s * console\..*;?.log("Mock Storage: Listener added");
+                storageListeners.push(cb);
+            }
+        }
+            },
+        runtime: {
+            sendMessage: (message, callback) => {
+                console.log("Mock Runtime Message:", message);
+                if (message.action === 'OLLAMA_REQUEST') {
+                    console.log("%c [Mock AI Request] Prompt:", "color: blue; font-weight: bold;", message.prompt);
+
+                    // Simulate AI Delay
+                    setTimeout(() => {
+                        let responseText = "Mock AI Response";
+
+                        // Simple Mock Logic based on prompt content
+                        if (message.prompt.includes('Referral')) responseText = "LinkedIn";
+                        else if (message.prompt.includes('Willing to Relocate')) responseText = "Yes";
+                        else if (message.prompt.includes('Pronouns')) responseText = "He/Him";
+                        else if (message.prompt.includes('Cover Letter')) responseText = "I am excited to apply for this position.";
+                        else if (message.prompt.includes('Department')) responseText = "Engineering";
+
+                        console.log("%c [Mock AI Response]", "color: green; font-weight: bold;", responseText);
+                        callback({ success: true, data: responseText });
+                    }, 1000);
+                    return true; // Async
+                }
+
+                if (message.action === 'CHECK_OLLAMA_STATUS') {
+                    callback({ success: true });
+                    return true;
+                }
+
+                if (window.postMessageMock) {
+                    window.postMessageMock(message, {}, callback);
                 }
             },
-            runtime: {
                 onMessage: {
-                    addListener: (callback) => {
-                        console.log("Mock Message Listener added");
-                        window.postMessageMock = callback;
-                    }
+                addListener: (callback) => {
+                    console.log("Mock Message Listener added");
+                    window.postMessageMock = callback;
                 }
-            }
+            },
+            lastError: null
+        };
         };
     </script>
     <!-- Load Extension Scripts -->

@@ -46,7 +46,7 @@ class ResumeParser {
                         results.push(profileData);
                     }
                 } catch (err) {
-                    console.error(`Error processing file ${file.name}:`, err);
+
                     errorCount++;
                 }
             }
@@ -59,7 +59,7 @@ class ResumeParser {
             return results;
 
         } catch (error) {
-            console.error('Resume parsing overall error:', error);
+
             throw error;
         }
     }
@@ -277,9 +277,9 @@ class ResumeParser {
                     });
 
                     // Debug: Log converted dates
-                    console.log(`Education: ${this.cleanLatexText(degree)}`);
-                    console.log(`  Raw dates: ${dateParts[0]} -- ${dateParts[1]}`);
-                    console.log(`  Converted: ${this.convertTextDateToYYYYMM(dateParts[0])} to ${this.convertTextDateToYYYYMM(dateParts[1])}`);
+
+
+
                 }
             }
         }
@@ -367,9 +367,9 @@ class ResumeParser {
 
                     // Debug: Log entries
                     if (data.workHistory.length <= 3) {
-                        console.log(`Work ${data.workHistory.length}: ${role} at ${company}`);
-                        console.log(`  Dates: ${startDate} to ${endDate}`);
-                        console.log(`  Description length: ${description.length}`);
+
+
+
                     }
                 }
             }

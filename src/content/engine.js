@@ -1,5 +1,5 @@
 (async function () {
-    console.log("🚀 SpeedyApply Engine Loaded");
+
 
     // Load User Data
     const storage = await chrome.storage.local.get(['profile', 'profiles', 'activeProfileId']);
@@ -14,7 +14,7 @@
     }
 
     if (!profile) {
-        console.log("SpeedyApply: No active profile found. Please set up your profile.");
+
         return;
     }
 
@@ -34,6 +34,31 @@
             console.error('SpeedyApply: Error extracting domain', e);
             return null;
         }
+    }
+
+    // --- AI Helper (Ollama via Background) ---
+    async function generateAIResponse(prompt) {
+        return new Promise((resolve) => {
+            chrome.runtime.sendMessage({
+                action: 'OLLAMA_REQUEST',
+                prompt: prompt,
+                model: profile.ollamaModel // Will be passed if we add it to profile object or fetch separately
+            }, (response) => {
+                if (chrome.runtime.lastError) {
+                    console.error("SpeedyApply AI Error (Runtime):", chrome.runtime.lastError);
+                    resolve(null);
+                    return;
+                }
+
+                if (response && response.success) {
+                    console.log("SpeedyApply AI: Ollama response received successfully.");
+                    resolve(response.data);
+                } else {
+                    console.error("SpeedyApply AI Error (Ollama):", response ? response.error : 'Unknown error');
+                    resolve(null);
+                }
+            });
+        });
     }
 
     const Engine = {
@@ -87,7 +112,7 @@
                 const isSubmitButton = trackingKeywords.some(keyword => text.includes(keyword));
 
                 if (isSubmitButton) {
-                    console.log(`SpeedyApply: Detected manual click on "${text}" - logging application.`);
+
                     this.logApplication();
                 }
             }, true); // Use capture to ensure we catch it before some frameworks might stop propagation
@@ -162,7 +187,7 @@
                     // UI update
                     this.updatePageToggleUI(newState);
 
-                    console.log(`SpeedyApply: Page-specific auto-fill for ${currentDomain} ${newState ? 'Enabled' : 'Disabled'}`);
+
                 };
 
                 container.appendChild(pageToggleBtn);
@@ -203,7 +228,7 @@
                 // UI update specific to this button is handled by storage listener or immediacy
                 this.updateToggleUI(newState);
 
-                console.log(`SpeedyApply: Auto-fill ${newState ? 'Enabled' : 'Disabled'}`);
+
             };
 
             // 2. Fill Button (The main FAB)
@@ -233,7 +258,7 @@
             fillBtn.onclick = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log("SpeedyApply: Manual FAB trigger");
+
                 this.scanAndFill(true); // Force fill
 
                 // Visual feedback
@@ -297,15 +322,31 @@
 
         scanAndFill: async function (force = false) {
             let shouldFill = true; // Default to true, disable if settings say so
+            let useAI = false;
+            let ollamaModel = 'qwen2.5-coder:3b';
             try {
                 // RE-FETCH PROFILE DATA to ensure we use the latest active profile
-                const storage = await chrome.storage.local.get(['profile', 'profiles', 'activeProfileId', 'isAutoFillEnabled', 'pageSpecificSettings']);
+                const storage = await chrome.storage.local.get(['profile', 'profiles', 'activeProfileId', 'isAutoFillEnabled', 'pageSpecificSettings', 'useOllama', 'ollamaModel']);
+
+                useAI = storage.useOllama === true;
+                if (storage.ollamaModel) ollamaModel = storage.ollamaModel;
+
+                shouldFill = storage.isAutoFillEnabled !== false;
+
+                if (useAI) {
+                    console.log(`SpeedyApply: Local AI (Ollama) is ENABLED. Model: ${ollamaModel}`);
+                    // Trigger a background check to see if Ollama is actually reachable right now
+                    chrome.runtime.sendMessage({ action: 'CHECK_OLLAMA_STATUS' }, (res) => {
+                        if (res && res.success) console.log("SpeedyApply: Ollama connection CONFIRMED ✅");
+                        else console.warn("SpeedyApply: Ollama connection FAILED ❌. Is it running?");
+                    });
+                }
 
                 let currentProfileData = null;
 
                 // Check if auto-fill is enabled globally
                 if (!force && storage.isAutoFillEnabled !== true) {
-                    console.log("SpeedyApply: Auto-fill disabled globally. Scanning for tracking only.");
+
                     shouldFill = false;
                 }
 
@@ -316,7 +357,7 @@
                         const pageSettings = storage.pageSpecificSettings || {};
                         const pageEnabled = pageSettings[currentDomain] === true; // Default false
                         if (!pageEnabled) {
-                            console.log(`SpeedyApply: Auto-fill disabled for ${currentDomain}. Scanning for tracking only.`);
+
                             shouldFill = false;
                         }
                     }
@@ -330,28 +371,31 @@
                 }
 
                 if (!currentProfileData) {
-                    console.log("SpeedyApply: No active profile found for autofill.");
+                    console.log("SpeedyApply: No Active Profile found. Auto-fill disabled.");
                     shouldFill = false;
                 } else {
                     // Update the global 'profile' variable used by getValueByKey helper
                     profile = currentProfileData;
+                    // console.log("SpeedyApply: Profile loaded.", profile.personal?.firstName);
                 }
 
             } catch (error) {
                 if (error.message.includes("Extension context invalidated")) {
-                    console.warn("SpeedyApply: Extension context invalidated (likely updated/reloaded). Stopping script.");
+                    console.warn("SpeedyApply: Extension context invalidated during scan.");
                     return;
                 }
-                console.error("SpeedyApply: Error accessing storage", error);
+                console.error("SpeedyApply: Error during scan setup", error);
                 return;
             }
 
 
             const inputs = this.getAllInputs(document.body);
+            console.log(`SpeedyApply: Scanned ${inputs.length} inputs on this page/frame.`);
+
             let filledCount = 0;
             let potentialMatches = 0;
 
-            console.log(`SpeedyApply: Found ${inputs.length} input elements`);
+
 
             // --- Array Handling Logic ---
             // Track occurrences of array-based keys to fill 1st, 2nd, 3rd items correctly
@@ -363,9 +407,12 @@
                 const key = window.SpeedyMatcher.identifyField(input);
                 const labelText = window.SpeedyMatcher.getLabelText(input);
 
+                if (inputs.length < 20) { // Only log details if not too spammy
+                    console.log(`SpeedyApply Input [${index}]: Label="${labelText}", Key="${key}", Tag=${input.tagName}, Type=${input.type}`);
+                }
+
                 // Skip Google Forms "Other:" fields (these are for radio/checkbox "Other" options)
                 if (labelText && (labelText.toLowerCase().includes('other response') || labelText.toLowerCase() === 'other')) {
-                    // console.log(`[${index + 1}] SKIPPED "Other" field: name="${input.name}" type="${input.type}" label="${labelText}"`);
                     return;
                 }
 
@@ -381,25 +428,38 @@
 
                     const value = this.getValueByKey(key, currentIndex);
                     if (value) {
-                        // console.log(`SpeedyApply: Filling ${key} [index ${currentIndex}] with "${value}"`);
-
-                        if (input.tagName === 'SELECT') {
-                            window.SpeedyInjector.setSelectValue(input, value, key);
-                        } else if (input.type === 'radio') {
-                            window.SpeedyInjector.setRadioValue(input, value, key);
-                        } else if (input.type === 'checkbox') {
-                            window.SpeedyInjector.setCheckboxValue(input, value, key);
-                        } else if (input.tagName === 'DIV' || input.tagName === 'BUTTON' || input.getAttribute('role') === 'combobox') {
-                            window.SpeedyInjector.setCustomDropdownValue(input, value, key);
-                        } else {
-                            window.SpeedyInjector.setValue(input, value, key);
-                        }
-                        input.dataset.speedyFilled = "true";
-                        input.style.border = "2px solid #22c55e";
+                        console.log(`SpeedyApply: Regex Matched & Filling ${key} [index ${currentIndex}]`);
+                        this.fillInput(input, value, key);
                         filledCount++;
                     } else {
-                        // console.log(`SpeedyApply: No value found for ${key} [index ${currentIndex}]`);
+                        console.log(`SpeedyApply: Regex Matched ${key} but NO VALUE in profile.`);
                     }
+                } else if (useAI && shouldFill && !input.value && !input.dataset.speedyFilled) {
+                    // Fallback to AI if no regex match and AI is enabled
+                    // Support Text, Textarea, Select, and Radio
+                    const isValidAIField =
+                        (input.type === 'text' || input.tagName === 'TEXTAREA' || input.tagName === 'SELECT') ||
+                        (input.type === 'radio' && !input.checked); // Only if not already checked
+
+                    if (isValidAIField) {
+                        // For radio, only trigger once per group? 
+                        // Logic: if radio is unchecked, we try to fill it. 
+                        // But we should check if ANY in the group is checked? 
+                        // For now, let attemptAIFill handle it or simplified check:
+                        let groupResolved = false;
+                        if (input.type === 'radio' && input.name) {
+                            const group = document.querySelectorAll(`input[name="${input.name}"]:checked`);
+                            if (group.length > 0) groupResolved = true;
+                        }
+
+                        if (!groupResolved) {
+                            // console.log("SpeedyApply: Falling back to AI for", input);
+                            this.attemptAIFill(input);
+                        }
+                    }
+                } else if (useAI && !input.value) {
+                    // Debug log to see why it didn't trigger
+                    // console.log("SpeedyApply Debug: Skipped AI. AI_Enabled:", useAI, "ShouldFill:", shouldFill, "HasValue:", !!input.value, "Dataset:", input.dataset.speedyFilled);
                 }
             });
 
@@ -407,7 +467,7 @@
             if (filledCount > 0 || potentialMatches > 0) {
                 this.logApplication();
             }
-            console.log(`SpeedyApply: Filled ${filledCount} fields. Potential matches: ${potentialMatches}`);
+
         },
 
 
@@ -644,12 +704,12 @@
                     });
                     await chrome.storage.local.set({ applicationLog: logs });
                     this.hasLogged = true;
-                    console.log(`SpeedyApply: Logged application. Portal: ${portal}, Company: ${company}, Location: ${location}`);
+
                 }
             } catch (error) {
                 // Ignore context invalidated errors here too
                 if (!error.message.includes("Extension context invalidated")) {
-                    console.error("SpeedyApply: Error logging application", error);
+
                 }
             }
         },
@@ -681,7 +741,7 @@
                 return isVisible || input.type === 'email' || input.type === 'tel' || input.type === 'text';
             });
 
-            console.log(`getAllInputs: Found ${inputs.length} inputs after filtering`);
+
 
             // Shadow DOM traversal
             // Walk through all elements to find shadow roots
@@ -695,6 +755,129 @@
             }
 
             return inputs;
+        },
+
+        fillInput: function (input, value, key) {
+            if (input.tagName === 'SELECT') {
+                window.SpeedyInjector.setSelectValue(input, value, key);
+            } else if (input.type === 'radio') {
+                window.SpeedyInjector.setRadioValue(input, value, key);
+            } else if (input.type === 'checkbox') {
+                window.SpeedyInjector.setCheckboxValue(input, value, key);
+            } else if (input.tagName === 'DIV' || input.tagName === 'BUTTON' || input.getAttribute('role') === 'combobox') {
+                window.SpeedyInjector.setCustomDropdownValue(input, value, key);
+            } else {
+                window.SpeedyInjector.setValue(input, value, key);
+            }
+            input.dataset.speedyFilled = "true";
+            input.style.border = "2px solid #22c55e";
+        },
+
+        attemptAIFill: async function (input) {
+            if (input.dataset.aiPending) return;
+            input.dataset.aiPending = "true";
+
+            const label = window.SpeedyMatcher.getLabelText(input);
+            if (!label || label.length < 3) {
+                delete input.dataset.aiPending;
+                return;
+            }
+
+            // --- Context Extraction ---
+            const context = {
+                profile: profile,
+                pageTitle: document.title,
+                domain: getDomain(),
+                company: ''
+            };
+
+            // Try to extract company name (Simplified logic from logApplication)
+            try {
+                const atMatch = document.title.match(/\s+at\s+([^|\-]+)/i);
+                if (atMatch && atMatch[1]) context.company = atMatch[1].trim();
+            } catch (e) { }
+
+
+            // --- Field Type Analysis ---
+            let fieldType = 'text';
+            let optionsList = [];
+
+            if (input.tagName === 'TEXTAREA') {
+                fieldType = 'long_text';
+            } else if (input.tagName === 'SELECT') {
+                fieldType = 'dropdown';
+                optionsList = Array.from(input.options).map(o => o.text.trim()).filter(t => t);
+            } else if (input.type === 'radio') {
+                fieldType = 'radio';
+                // Find all radio buttons with the same name
+                const name = input.name;
+                if (name) {
+                    const radios = document.querySelectorAll(`input[type="radio"][name="${name}"]`);
+                    radios.forEach(r => {
+                        const lbl = window.SpeedyMatcher.getLabelText(r);
+                        if (lbl) optionsList.push(lbl);
+                    });
+                }
+            }
+
+
+            // --- Prompt Construction ---
+            let systemPrompt = `You are a helpful job application assistant. You are filling out a form for a user.
+User Profile: ${JSON.stringify(profile)}
+Page Title: "${context.pageTitle}"
+Company: "${context.company}"
+`;
+
+            let userPrompt = `Field Label: "${label}"\n`;
+
+            if (fieldType === 'dropdown' || fieldType === 'radio') {
+                userPrompt += `Type: Selection (Choose one)\n`;
+                userPrompt += `Available Options: ${JSON.stringify(optionsList)}\n`;
+                userPrompt += `Task: Choose the BEST option from the list that matches the user profile. Return ONLY the exact text of the option. if none matches, pick the most logical one or "Other".`;
+            } else if (fieldType === 'long_text') {
+                userPrompt += `Type: Long Text / Essay\n`;
+                userPrompt += `Task: Write a professional response for this field based on the user profile. Keep it relevant and concise unless asked for a cover letter. Return ONLY the text to be filled.`;
+            } else {
+                userPrompt += `Type: Short Text\n`;
+                userPrompt += `Task: Provide the best value for this field. Return ONLY the value. No explanations.`;
+            }
+
+            console.log(`SpeedyApply: AI Prompt for "${label}" (${fieldType})`, userPrompt);
+
+            const response = await generateAIResponse(systemPrompt + "\n\n" + userPrompt);
+
+            if (response) {
+                let cleaned = response.trim();
+
+                // Clean-up: Remove Markdown code blocks if present
+                cleaned = cleaned.replace(/^```(json|text)?\n/, '').replace(/\n```$/, '');
+                // Remove surrounding quotes if present and not part of the content (heuristic)
+                if ((cleaned.startsWith('"') && cleaned.endsWith('"')) || (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
+                    cleaned = cleaned.slice(1, -1);
+                }
+
+
+                if (cleaned) {
+                    console.log(`SpeedyApply AI: Filled "${label}" with "${cleaned}"`);
+
+                    if (fieldType === 'dropdown' || fieldType === 'radio') {
+                        // Try to find the exact option match or fuzzy match
+                        const bestMatch = optionsList.find(opt => opt.toLowerCase() === cleaned.toLowerCase()) ||
+                            optionsList.find(opt => opt.toLowerCase().includes(cleaned.toLowerCase()));
+
+                        if (bestMatch) {
+                            cleaned = bestMatch;
+                        }
+                    }
+
+                    this.fillInput(input, cleaned, 'AI_GENERATED');
+                    input.style.border = "2px solid #a855f7"; // Purple for AI
+                }
+            } else {
+                console.log(`SpeedyApply AI: Failed to generate response for "${label}"`);
+            }
+
+            delete input.dataset.aiPending;
         },
 
         getValueByKey: function (key, index = 0) {
@@ -789,7 +972,7 @@
                 // here we just remove DOM, listener persists but checks for element)
                 window.removeEventListener('message', this.boundDragListener);
                 existing.remove();
-                console.log("SpeedyApply: Pinned popup removed");
+
             } else {
                 // Create Container
                 const container = document.createElement('div');
@@ -997,7 +1180,7 @@
                 window.addEventListener('message', this.boundDragListener);
 
                 document.body.appendChild(container);
-                console.log("SpeedyApply: Pinned popup injected with resize/drag support");
+
             }
         },
 
@@ -1065,7 +1248,7 @@
     // Listen for manual triggers
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (request.action === "fill") {
-            console.log("SpeedyApply: Manual fill triggered");
+
             Engine.scanAndFill(true); // Force fill
             sendResponse({ status: "done" });
         } else if (request.action === "toggle_pin_popup") {
@@ -1085,16 +1268,16 @@
     const isGoogleForms = window.location.href.includes('docs.google.com/forms');
     const initialDelay = isGoogleForms ? 3000 : 1000;
 
-    console.log(`SpeedyApply: Waiting ${initialDelay}ms for page to fully load...`);
+
 
     setTimeout(() => {
         Engine.init();
 
         // For Google Forms, do an additional scan after a delay
         if (isGoogleForms) {
-            console.log("SpeedyApply: Google Forms detected - will retry scan after 2 seconds");
+
             setTimeout(() => {
-                console.log("SpeedyApply: Google Forms retry scan starting...");
+
                 Engine.scanAndFill(false);
             }, 2000);
         }

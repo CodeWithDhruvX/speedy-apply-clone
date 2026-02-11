@@ -65,7 +65,7 @@ window.SpeedyMatcher = {
         }
 
         if (bestMatch) {
-            // console.log(`SpeedyMatcher: Identify "${elementName || elementId}" -> ${bestMatch} (Score: ${maxScore})`);
+
         }
 
         return bestMatch;

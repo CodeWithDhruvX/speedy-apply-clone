@@ -20,7 +20,6 @@ const testLatex = `\\begin{rSection}{Experience}
 const regex = /\\textbf\{([^}]+)\}\s*\\hfill\s*([^\\\n]+)/g;
 const matches = testLatex.match(regex);
 
-console.log('Regex matches:', matches);
-console.log('Number of matches:', matches ? matches.length : 0);
+
 
 // Expected: Should match both entries

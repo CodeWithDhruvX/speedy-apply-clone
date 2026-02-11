@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const url = new URL(tab.url);
                 currentDomain = url.hostname.replace(/^www\./, '');
             } catch (e) {
-                console.error('Error parsing URL:', e);
+
             }
 
             if (currentDomain && currentDomainEl) {
@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
     } catch (e) {
-        console.error('Error getting current tab:', e);
+
         if (currentDomainEl) {
             currentDomainEl.textContent = 'Error loading';
         }
@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         loadActiveProfile();
 
     } catch (e) {
-        console.error('Error loading data:', e);
+
     }
 
     // Render Selector
@@ -257,7 +257,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } catch (e) {
             showStatus('Error saving profile.', 'error');
-            console.error(e);
+
         }
     });
 
@@ -461,7 +461,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Pass tabId so engine can pass it back to the pinned iframe
                 chrome.tabs.sendMessage(tab.id, { action: "toggle_pin_popup", tabId: tab.id }, () => {
                     if (chrome.runtime.lastError) {
-                        console.error('Error sending message:', chrome.runtime.lastError);
+
                     }
                     window.close();
                 });
@@ -485,11 +485,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (targetTabId) {
                 chrome.tabs.sendMessage(targetTabId, { action: "toggle_pin_popup" }, (response) => {
                     if (chrome.runtime.lastError) {
-                        console.error("SpeedyApply: Unpin failed", chrome.runtime.lastError);
+
                     }
                 });
             } else {
-                console.error("SpeedyApply: Could not find active tab to unpin");
+
             }
         });
     }
@@ -499,7 +499,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
             if (tab) {
                 chrome.tabs.sendMessage(tab.id, { action: "minimize_popup", tabId: tab.id }, () => {
-                    if (chrome.runtime.lastError) console.error(chrome.runtime.lastError);
+
                 });
             }
         });

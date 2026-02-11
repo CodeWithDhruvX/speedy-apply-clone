@@ -188,7 +188,7 @@ window.SpeedyInjector = {
                 for (let opt of options) {
                     if (opt.innerText.trim().toLowerCase() === valStr) {
                         opt.click();
-                        console.log("SpeedyApply: Clicked exact custom option", opt.innerText);
+
                         clicked = true;
                         break;
                     }
@@ -199,7 +199,7 @@ window.SpeedyInjector = {
                     for (let opt of options) {
                         if (opt.innerText.toLowerCase().includes(valStr)) {
                             opt.click();
-                            console.log("SpeedyApply: Clicked partial custom option", opt.innerText);
+
                             clicked = true;
                             break;
                         }
