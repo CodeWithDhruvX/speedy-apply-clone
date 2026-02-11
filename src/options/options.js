@@ -759,19 +759,24 @@ function renderProfileForm() {
     document.getElementById('de-race').value = data.eeoc.race || '';
     document.getElementById('de-veteran').value = data.eeoc.veteran || '';
     document.getElementById('de-disability').value = data.eeoc.disability || '';
+    document.getElementById('de-pronouns').value = data.eeoc.pronouns || ''; // New
 
     // Populate Job Preferences
     document.getElementById('pref-noticePeriod').value = data.preferences.noticePeriod || '';
+    document.getElementById('pref-currentCompany').value = data.preferences.currentCompany || ''; // New
+    document.getElementById('pref-currentDesignation').value = data.preferences.currentDesignation || ''; // New
+    document.getElementById('pref-relocation').value = data.preferences.relocation || ''; // New
     document.getElementById('pref-currentCtc').value = data.preferences.currentCtc || '';
     document.getElementById('pref-expectedCtc').value = data.preferences.expectedCtc || '';
     document.getElementById('pref-experience').value = data.preferences.experience || '';
-    document.getElementById('pref-relevantType').value = data.preferences.relevantType || ''; // New
-    document.getElementById('pref-preferredLocation').value = data.preferences.preferredLocation || ''; // New
-    document.getElementById('pref-holdingOffers').value = data.preferences.holdingOffers || ''; // New
-    document.getElementById('pref-careerGaps').value = data.preferences.careerGaps || ''; // New
+    document.getElementById('pref-relevantType').value = data.preferences.relevantType || '';
+    document.getElementById('pref-preferredLocation').value = data.preferences.preferredLocation || '';
+    document.getElementById('pref-holdingOffers').value = data.preferences.holdingOffers || '';
+    document.getElementById('pref-careerGaps').value = data.preferences.careerGaps || '';
 
     // Populate Profile Extras
     document.getElementById('pr-skills').value = data.profile.skills || '';
+    document.getElementById('pr-headline').value = data.profile.headline || ''; // New
     document.getElementById('pr-reasonForChange').value = data.profile.reasonForChange || '';
     document.getElementById('pr-summary').value = data.profile.summary || '';
     document.getElementById('doc-coverLetter').value = data.documents.coverLetter || '';
@@ -890,20 +895,25 @@ async function saveCurrentProfile() {
             gender: document.getElementById('de-gender').value,
             race: document.getElementById('de-race').value,
             veteran: document.getElementById('de-veteran').value,
-            disability: document.getElementById('de-disability').value
+            disability: document.getElementById('de-disability').value,
+            pronouns: document.getElementById('de-pronouns').value // New
         },
         preferences: {
             noticePeriod: document.getElementById('pref-noticePeriod').value,
             currentCtc: document.getElementById('pref-currentCtc').value,
             expectedCtc: document.getElementById('pref-expectedCtc').value,
             experience: document.getElementById('pref-experience').value,
-            relevantType: document.getElementById('pref-relevantType').value, // New
-            preferredLocation: document.getElementById('pref-preferredLocation').value, // New
-            holdingOffers: document.getElementById('pref-holdingOffers').value, // New
-            careerGaps: document.getElementById('pref-careerGaps').value // New
+            currentCompany: document.getElementById('pref-currentCompany').value, // New
+            currentDesignation: document.getElementById('pref-currentDesignation').value, // New
+            relocation: document.getElementById('pref-relocation').value, // New
+            relevantType: document.getElementById('pref-relevantType').value,
+            preferredLocation: document.getElementById('pref-preferredLocation').value,
+            holdingOffers: document.getElementById('pref-holdingOffers').value,
+            careerGaps: document.getElementById('pref-careerGaps').value
         },
         profile: {
             skills: document.getElementById('pr-skills').value,
+            headline: document.getElementById('pr-headline').value, // New
             reasonForChange: document.getElementById('pr-reasonForChange').value,
             summary: document.getElementById('pr-summary').value
         },
@@ -1509,18 +1519,28 @@ if (generateEmailBtn) {
         const careerGaps = getVal('pref-careerGaps');
 
         // Work History (Read from DOM list items)
-        let currentEmployer = '[Company Name]';
-        let currentDesignation = '[Designation]';
+        let currentEmployer = getVal('pref-currentCompany'); // Try explicit field first
+        let currentDesignation = getVal('pref-currentDesignation'); // Try explicit field first
         let previousEmployer = 'NA';
 
         const workItems = document.querySelectorAll('#work-list .work-item');
         if (workItems.length > 0) {
-            currentEmployer = workItems[0].querySelector('.work-company').value || '[Company Name]';
-            currentDesignation = workItems[0].querySelector('.work-title').value || '[Designation]';
+            // If explicit fields are empty, fallback to first work item
+            if (!currentEmployer || currentEmployer === '') {
+                currentEmployer = workItems[0].querySelector('.work-company').value || '[Company Name]';
+            }
+            if (!currentDesignation || currentDesignation === '') {
+                currentDesignation = workItems[0].querySelector('.work-title').value || '[Designation]';
+            }
 
+            // Simple logic for previous employer: if workItems[0] is current, then workItems[1] is previous
+            // Or if we used workItems[0] as current, then workItems[1] is previous.
             if (workItems.length > 1) {
                 previousEmployer = workItems[1].querySelector('.work-company').value || 'NA';
             }
+        } else {
+            if (!currentEmployer) currentEmployer = '[Company Name]';
+            if (!currentDesignation) currentDesignation = '[Designation]';
         }
 
         // Education

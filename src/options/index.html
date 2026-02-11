@@ -262,6 +262,10 @@
                         </select>
                     </div>
                     <div class="form-group">
+                        <label>Pronouns</label>
+                        <input type="text" id="de-pronouns" class="form-input" placeholder="e.g. He/Him">
+                    </div>
+                    <div class="form-group">
                         <label>Gender</label>
                         <select id="de-gender" class="form-input">
                             <option value="">Select...</option>
@@ -338,6 +342,23 @@
                     </select>
                 </div>
                 <div class="form-group">
+                    <label>Current Company</label>
+                    <input type="text" id="pref-currentCompany" class="form-input" placeholder="e.g. Google">
+                </div>
+                <div class="form-group">
+                    <label>Current Designation</label>
+                    <input type="text" id="pref-currentDesignation" class="form-input"
+                        placeholder="e.g. Senior Software Engineer">
+                </div>
+                <div class="form-group">
+                    <label>Willing to Relocate? (Yes/No)</label>
+                    <select id="pref-relocation" class="form-input">
+                        <option value="">Select...</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label>Current CTC</label>
                     <input type="text" id="pref-currentCtc" class="form-input" placeholder="e.g. 15 LPA">
                 </div>
@@ -372,6 +393,11 @@
         <div class="card">
             <h3>Profile Extras</h3>
             <div class="form-grid">
+                <div class="form-group full-width">
+                    <label>Resume Headline</label>
+                    <textarea id="pr-headline" class="form-input" rows="2"
+                        placeholder="e.g. Senior Full Stack Engineer with 5+ years of experience..."></textarea>
+                </div>
                 <div class="form-group full-width">
                     <label>Skills (Comma Separated)</label>
                     <textarea id="pr-skills" class="form-input" rows="2"
@@ -451,6 +477,26 @@
                 <h1>Settings</h1>
                 <p style="color: #9ca3af; margin-top: 5px;">Configure global extension behavior.</p>
             </header>
+
+            <div class="card" style="margin-top: 20px; border-left: 4px solid #6366f1; background: #1e1e2e;">
+                <div class="card-header">
+                    <h3>💾 Full System Backup & Restore</h3>
+                    <div style="display: flex; gap: 10px;">
+                        <button id="backupDataBtn" class="primary-btn" style="background-color: #4f46e5;"
+                            title="Backup EVERYTHING (Profiles, History, Settings)">
+                            ⬇️ Backup All Data
+                        </button>
+                        <button id="restoreDataBtn" class="secondary-btn" title="Restore from Full Backup File">
+                            ⬆️ Restore Backup
+                        </button>
+                        <input type="file" id="restoreFileInput" accept=".json" style="display: none;">
+                    </div>
+                </div>
+                <p style="color: #9ca3af; font-size: 0.9em; margin-top: 5px;">
+                    <strong>Important:</strong> Chrome extensions delete all data when uninstalled. Download a Full
+                    Backup regularly to save your data.
+                </p>
+            </div>
 
             <div class="card">
                 <h3>Local AI (Ollama)</h3>
