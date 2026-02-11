@@ -296,12 +296,12 @@
         },
 
         scanAndFill: async function (force = false) {
+            let shouldFill = true; // Default to true, disable if settings say so
             try {
                 // RE-FETCH PROFILE DATA to ensure we use the latest active profile
                 const storage = await chrome.storage.local.get(['profile', 'profiles', 'activeProfileId', 'isAutoFillEnabled', 'pageSpecificSettings']);
 
                 let currentProfileData = null;
-                let shouldFill = true; // Default to true, disable if settings say so
 
                 // Check if auto-fill is enabled globally
                 if (!force && storage.isAutoFillEnabled !== true) {
