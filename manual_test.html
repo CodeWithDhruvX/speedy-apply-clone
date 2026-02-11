@@ -482,6 +482,27 @@
                     </ul>
                 </div>
             </div>
+
+            <div class="form-group">
+                <label>Skills (Checkbox)</label>
+                <div>
+                    <label><input type="checkbox" name="skills_check" value="Java"> Java</label>
+                    <label><input type="checkbox" name="skills_check" value="Python"> Python</label>
+                    <label><input type="checkbox" name="skills_check" value="C++"> C++</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>AI Logic Check (Numeric)</h2>
+        <div class="form-group">
+            <label>Total Years of Experience (Should be number)</label>
+            <input type="text" name="experience_years">
+        </div>
+        <div class="form-group">
+            <label>Current CTC (Should be number)</label>
+            <input type="text" name="current_ctc_numeric">
         </div>
     </div>
 
@@ -737,6 +758,7 @@
                         else if (message.prompt.includes('Pronouns')) responseText = "He/Him";
                         else if (message.prompt.includes('Cover Letter')) responseText = "I am excited to apply for this position.";
                         else if (message.prompt.includes('Department')) responseText = "Engineering";
+                        else if (message.prompt.includes('Skills') && message.prompt.includes('Checkbox')) responseText = "Java, Python";
 
                         console.log("%c [Mock AI Response]", "color: green; font-weight: bold;", responseText);
                         callback({ success: true, data: responseText });

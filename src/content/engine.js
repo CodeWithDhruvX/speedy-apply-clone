@@ -784,11 +784,26 @@
             }
 
             // --- Context Extraction ---
+            const getSectionContext = (el) => {
+                let current = el.parentElement;
+                let depth = 0;
+                while (current && depth < 5) {
+                    const header = current.querySelector('h1, h2, h3, h4, h5, h6, legend, label.section-label');
+                    if (header) return header.innerText.trim();
+                    current = current.parentElement;
+                    depth++;
+                }
+                return "";
+            };
+
+            const sectionContext = getSectionContext(input);
+
             const context = {
                 profile: profile,
                 pageTitle: document.title,
                 domain: getDomain(),
-                company: ''
+                company: '',
+                section: sectionContext
             };
 
             // Try to extract company name (Simplified logic from logApplication)
@@ -818,6 +833,22 @@
                         if (lbl) optionsList.push(lbl);
                     });
                 }
+            } else if (input.type === 'checkbox') {
+                fieldType = 'checkbox';
+                // Same name check for group checkboxes
+                const name = input.name;
+                if (name) {
+                    const checkboxes = document.querySelectorAll(`input[type="checkbox"][name="${name}"]`);
+                    if (checkboxes.length > 1) {
+                        checkboxes.forEach(c => {
+                            const lbl = window.SpeedyMatcher.getLabelText(c);
+                            if (lbl) optionsList.push(lbl);
+                        });
+                    } else {
+                        // Single boolean checkbox
+                        optionsList = ['Yes', 'No']; // implied
+                    }
+                }
             }
 
 
@@ -826,6 +857,7 @@
 User Profile: ${JSON.stringify(profile)}
 Page Title: "${context.pageTitle}"
 Company: "${context.company}"
+Section: "${context.section}"
 `;
 
             let userPrompt = `Field Label: "${label}"\n`;
@@ -833,13 +865,29 @@ Company: "${context.company}"
             if (fieldType === 'dropdown' || fieldType === 'radio') {
                 userPrompt += `Type: Selection (Choose one)\n`;
                 userPrompt += `Available Options: ${JSON.stringify(optionsList)}\n`;
-                userPrompt += `Task: Choose the BEST option from the list that matches the user profile. Return ONLY the exact text of the option. if none matches, pick the most logical one or "Other".`;
+                userPrompt += `Task: Choose the BEST option from the list that matches the user profile. Return ONLY the exact text of the option. If none matches exactly, pick the most logical one or "Other". Do NOT add any explanation.`;
+            } else if (fieldType === 'checkbox') {
+                userPrompt += `Type: Selection (Multiple allowed)\n`;
+                userPrompt += `Available Options: ${JSON.stringify(optionsList)}\n`;
+                userPrompt += `Task: Choose the applicable options from the list. Return the exact text of the options separated by a comma (e.g. "Option A, Option B"). If none apply, return "No".`;
             } else if (fieldType === 'long_text') {
                 userPrompt += `Type: Long Text / Essay\n`;
                 userPrompt += `Task: Write a professional response for this field based on the user profile. Keep it relevant and concise unless asked for a cover letter. Return ONLY the text to be filled.`;
             } else {
-                userPrompt += `Type: Short Text\n`;
-                userPrompt += `Task: Provide the best value for this field. Return ONLY the value. No explanations.`;
+                // Heuristic for Numeric/Experience fields
+                const lowerLabel = label.toLowerCase();
+                if (lowerLabel.includes('experience') || lowerLabel.includes('years') || lowerLabel.includes('ctc') || lowerLabel.includes('salary') || input.type === 'number') {
+                    userPrompt += `Type: Numeric (Decimal)\n`;
+                    userPrompt += `Constraint: You must return ONLY a decimal number (e.g., 5.0, 10.5, 0.0). Do NOT include text like "years", "lpa", "$", etc.\n`;
+                    userPrompt += `Task: Extract the numeric value for this field from the profile. If the user has no experience or the value is missing, return "0.0".`;
+                } else if (input.type === 'date') {
+                    userPrompt += `Type: Date\n`;
+                    userPrompt += `Constraint: Return in YYYY-MM-DD format.\n`;
+                    userPrompt += `Task: Provide the date based on the profile.\n`;
+                } else {
+                    userPrompt += `Type: Short Text\n`;
+                    userPrompt += `Task: Provide the best value for this field. Return ONLY the value. No explanations.`;
+                }
             }
 
             console.log(`SpeedyApply: AI Prompt for "${label}" (${fieldType})`, userPrompt);
@@ -867,11 +915,42 @@ Company: "${context.company}"
 
                         if (bestMatch) {
                             cleaned = bestMatch;
+                            this.fillInput(input, cleaned, 'AI_GENERATED');
+                            input.style.border = "2px solid #a855f7"; // Purple for AI
+                        } else {
+                            console.warn("SpeedyApply AI: Could not match option for", label, cleaned);
+                            // Optional: Fill anyway if it's a combobox or we trust the input?
+                            // For strict dropdowns, failing to match means we can't select it easily relying on current injectors.
                         }
+                    } else if (fieldType === 'checkbox') {
+                        const choices = cleaned.split(',').map(s => s.trim());
+                        // For each choice, try to find a matching checkbox in the group and click it?
+                        // fillInput logic for checkbox expects a value.
+                        // If it's a standard single checkbox setup (boolean):
+                        if (optionsList.includes('Yes') && optionsList.includes('No') && optionsList.length === 2) {
+                            // Single checkbox logic, often "I agree" etc.
+                            if (cleaned.toLowerCase().includes('yes') || cleaned.toLowerCase().includes('agree')) {
+                                this.fillInput(input, true, 'AI_GENERATED');
+                                input.style.border = "2px solid #a855f7";
+                            }
+                        } else {
+                            // Multiple checkboxes
+                            // We need to find the specific inputs to check.
+                            // This is tricky because `fillInput` takes `input`.
+                            // We might need to iterate over the group here if we want to support multi-select AI.
+                            // For now, let's just log implementation gap or try to fill the current one if it matches.
+                            choices.forEach(choice => {
+                                if (window.SpeedyMatcher.getLabelText(input).toLowerCase().includes(choice.toLowerCase())) {
+                                    this.fillInput(input, true, 'AI_GENERATED');
+                                    input.style.border = "2px solid #a855f7";
+                                }
+                            });
+                        }
+                    } else {
+                        this.fillInput(input, cleaned, 'AI_GENERATED');
+                        input.style.border = "2px solid #a855f7"; // Purple for AI
                     }
 
-                    this.fillInput(input, cleaned, 'AI_GENERATED');
-                    input.style.border = "2px solid #a855f7"; // Purple for AI
                 }
             } else {
                 console.log(`SpeedyApply AI: Failed to generate response for "${label}"`);
