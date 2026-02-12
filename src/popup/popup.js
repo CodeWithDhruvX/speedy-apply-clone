@@ -37,6 +37,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
+    // 0.1 Init Floating Widget Toggle
+    const floatingWidgetToggle = document.getElementById('floatingWidgetToggle');
+    if (floatingWidgetToggle) {
+        chrome.storage.local.get(['isFloatingWidgetVisible'], (result) => {
+            const isVisible = result.isFloatingWidgetVisible !== false;
+            floatingWidgetToggle.checked = isVisible;
+        });
+
+        floatingWidgetToggle.addEventListener('change', () => {
+            const isVisible = floatingWidgetToggle.checked;
+            chrome.storage.local.set({ isFloatingWidgetVisible: isVisible }, () => {
+                showStatus(isVisible ? 'Widget Visible' : 'Widget Hidden', 'success');
+            });
+        });
+    }
+
     // 0.5. Init Page-Specific Toggle
     const pageSpecificToggle = document.getElementById('pageSpecificToggle');
     const currentDomainEl = document.getElementById('currentDomain');

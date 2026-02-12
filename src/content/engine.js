@@ -95,6 +95,15 @@
                         this.updatePageToggleUI(newSettings[domain] !== false);
                     }
                 }
+                if (namespace === 'local' && changes.isFloatingWidgetVisible) {
+                    const isVisible = changes.isFloatingWidgetVisible.newValue;
+                    if (isVisible) {
+                        this.createFloatingButton();
+                    } else {
+                        const container = document.getElementById('speedy-apply-container');
+                        if (container) container.remove();
+                    }
+                }
             });
         },
 
@@ -119,6 +128,10 @@
         },
 
         createFloatingButton: async function () {
+            // Check visibility setting
+            const storageCheck = await chrome.storage.local.get('isFloatingWidgetVisible');
+            if (storageCheck.isFloatingWidgetVisible === false) return;
+
             if (document.getElementById('speedy-apply-container')) return;
 
             // Container
@@ -153,6 +166,39 @@
                 display: 'flex',
                 justifyContent: 'center'
             });
+
+            // --- Close Button ---
+            const closeBtn = document.createElement('div');
+            closeBtn.innerText = '×';
+            closeBtn.title = 'Close Widget (Enable from Popup)';
+            Object.assign(closeBtn.style, {
+                position: 'absolute',
+                top: '-8px',
+                right: '-8px',
+                width: '18px',
+                height: '18px',
+                lineHeight: '16px',
+                borderRadius: '50%',
+                backgroundColor: '#ef4444', // red-500
+                color: 'white',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                zIndex: '1000000',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                userSelect: 'none'
+            });
+
+            closeBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                container.remove();
+                chrome.storage.local.set({ isFloatingWidgetVisible: false });
+            };
+            container.appendChild(closeBtn);
 
             // Add Drag Logic
             let isDragging = false;
